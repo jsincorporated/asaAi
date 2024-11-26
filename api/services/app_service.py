@@ -5,6 +5,7 @@ from typing import cast
 
 from flask_login import current_user
 from flask_sqlalchemy.pagination import Pagination
+from google.cloud import firestore
 
 from configs import dify_config
 from constants.model_template import default_app_templates
@@ -367,3 +368,25 @@ class AppService:
                         meta["tool_icons"][tool_name] = {"background": "#252525", "content": "\ud83d\ude01"}
 
         return meta
+    def export_to_firestore(self, args):
+        """
+        Export app data to Firestore.
+        :param args: Dictionary of app details to store in Firestore.
+        """
+        app_id = args.get("appID")
+        name = args.get("name")
+        description = args.get("description")
+        icon = args.get("icon")
+        icon_background = args.get("icon_background")
+
+        if not app_id:
+            raise ValueError("appID is required for Firestore export.")
+        doc_ref = firestore.Client().collection("workflows").document(app_id)
+        app_data = {
+            "name": name,
+            "description": description,
+            "icon": icon,
+            "icon_background": icon_background,
+            "app_id": app_id,
+        }
+        doc_ref.set(app_data)

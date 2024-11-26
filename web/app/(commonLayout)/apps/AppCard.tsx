@@ -10,7 +10,7 @@ import cn from '@/utils/classnames'
 import type { App } from '@/types/app'
 import Confirm from '@/app/components/base/confirm'
 import { ToastContext } from '@/app/components/base/toast'
-import { copyApp, deleteApp, exportAppConfig, updateAppInfo } from '@/service/apps'
+import { copyApp, deleteApp, exportAppConfig, exportToFirestore, updateAppInfo } from '@/service/apps'
 import DuplicateAppModal from '@/app/components/app/duplicate-modal'
 import type { DuplicateAppModalProps } from '@/app/components/app/duplicate-modal'
 import AppIcon from '@/app/components/base/app-icon'
@@ -43,6 +43,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const { isCurrentWorkspaceEditor } = useAppContext()
   const { onPlanInfoChanged } = useProviderContext()
   const { push } = useRouter()
+  const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] = useState(false)
 
   const mutateApps = useContextSelector(
     AppsContext,
@@ -175,6 +176,26 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
     setShowSwitchModal(false)
   }
 
+  const handleFirestoreExport = async () => {
+    try {
+      await exportToFirestore({
+        appID: app.id,
+        name: app.name,
+        icon: app.icon,
+        icon_background: app.icon_background,
+        description: app.description,
+      })
+      setShowFirestoreExportConfirm(false)
+      notify({
+        type: 'success',
+        message: 'Successfully exported to firestore',
+      })
+    }
+    catch (e) {
+      notify({ type: 'error', message: t('app.newApp.appCreateFailed') })
+    }
+  }
+
   const Operations = (props: HtmlContentProps) => {
     const onMouseLeave = async () => {
       props.onClose?.()
@@ -190,6 +211,12 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       props.onClick?.()
       e.preventDefault()
       setShowDuplicateModal(true)
+    }
+    const onClickFirestoreExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      props.onClick?.()
+      e.preventDefault()
+      setShowFirestoreExportConfirm(true)
     }
     const onClickExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
@@ -213,6 +240,9 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       <div className="relative w-full py-1" onMouseLeave={onMouseLeave}>
         <button className={s.actionItem} onClick={onClickSettings}>
           <span className={s.actionName}>{t('app.editApp')}</span>
+        </button>
+        <button className={s.actionItem} onClick={onClickFirestoreExport}>
+          <span className={s.actionName}>{'Firestore'}</span>
         </button>
         <Divider className="!my-1" />
         <button className={s.actionItem} onClick={onClickDuplicate}>
@@ -406,6 +436,15 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
           isShow={showConfirmDelete}
           onConfirm={onConfirmDelete}
           onCancel={() => setShowConfirmDelete(false)}
+        />
+      )}
+      {showFirestoreExportConfirm && (
+        <Confirm
+          title="Export to Firestore"
+          content="Are you sure you want to export this app to Firestore?"
+          isShow={showFirestoreExportConfirm}
+          onConfirm={handleFirestoreExport}
+          onCancel={() => setShowFirestoreExportConfirm(false)}
         />
       )}
       {secretEnvList.length > 0 && (

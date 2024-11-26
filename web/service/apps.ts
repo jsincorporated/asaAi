@@ -5,6 +5,10 @@ import type { CommonResponse } from '@/models/common'
 import type { AppIconType, AppMode, ModelConfig } from '@/types/app'
 import type { TracingProvider } from '@/app/(commonLayout)/app/(appDetailLayout)/[appId]/overview/tracing/type'
 
+export const exportToFirestore: Fetcher<AppDetailResponse, { appID: string; name: string; icon: string; icon_background?: string | null; description?: string }> = ({ appID, name, icon, icon_background, description }) => {
+  return post<AppDetailResponse>(`apps/${appID}/exportFirestore`, { body: { appID, name, icon, icon_background, description } })
+}
+
 export const fetchAppList: Fetcher<AppListResponse, { url: string; params?: Record<string, any> }> = ({ url, params }) => {
   return get<AppListResponse>(url, { params })
 }

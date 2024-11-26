@@ -226,6 +226,31 @@ class AppCopyApi(Resource):
 
         return app, 201
 
+class AppExportFirestoreApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @get_app_model
+    @marshal_with(app_detail_fields_with_site)
+    def post(self, app_model):
+        """Export App Firestore"""
+        # The role of the current user in the ta table must be admin, owner, or editor
+        if not current_user.is_editor:
+            raise Forbidden()
+
+        parser = reqparse.RequestParser()
+        parser.add_argument("appID", type=str, location="json")
+        parser.add_argument("name", type=str, location="json")
+        parser.add_argument("description", type=str, location="json")
+        parser.add_argument("icon", type=str, location="json")
+        parser.add_argument("icon_background", type=str, location="json")
+        args = parser.parse_args()
+
+        app_service = AppService()
+        app_service.export_to_firestore(args)
+
+        return 201
+
 
 class AppExportApi(Resource):
     @setup_required
@@ -367,6 +392,7 @@ api.add_resource(AppImportApi, "/apps/import")
 api.add_resource(AppImportFromUrlApi, "/apps/import/url")
 api.add_resource(AppApi, "/apps/<uuid:app_id>")
 api.add_resource(AppCopyApi, "/apps/<uuid:app_id>/copy")
+api.add_resource(AppExportFirestoreApi, "/apps/<uuid:app_id>/exportFirestore")
 api.add_resource(AppExportApi, "/apps/<uuid:app_id>/export")
 api.add_resource(AppNameApi, "/apps/<uuid:app_id>/name")
 api.add_resource(AppIconApi, "/apps/<uuid:app_id>/icon")
