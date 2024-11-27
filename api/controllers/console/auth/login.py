@@ -32,7 +32,6 @@ from services.feature_service import FeatureService
 
 ASA_ACCOUNT_EMAIL = 'webmasters@asa.team'
 
-
 class LoginApi(Resource):
     """Resource for user login."""
 

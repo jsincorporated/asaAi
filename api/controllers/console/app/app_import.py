@@ -36,6 +36,7 @@ class AppImportApi(Resource):
         parser.add_argument("icon", type=str, location="json")
         parser.add_argument("icon_background", type=str, location="json")
         parser.add_argument("app_id", type=str, location="json")
+        parser.add_argument("asa_company_id", type=str, location="json")
         args = parser.parse_args()
 
         # Create service with session
@@ -54,6 +55,7 @@ class AppImportApi(Resource):
                 icon=args.get("icon"),
                 icon_background=args.get("icon_background"),
                 app_id=args.get("app_id"),
+                asa_company_id=args.get("asa_company_id"),
             )
             session.commit()
 

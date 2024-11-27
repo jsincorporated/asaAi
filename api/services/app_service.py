@@ -368,6 +368,7 @@ class AppService:
                         meta["tool_icons"][tool_name] = {"background": "#252525", "content": "\ud83d\ude01"}
 
         return meta
+    
     def export_to_firestore(self, args):
         """
         Export app data to Firestore.

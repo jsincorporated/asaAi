@@ -239,6 +239,7 @@ class AppDslService:
                 icon_type=icon_type,
                 icon=icon,
                 icon_background=icon_background,
+                asa_company_id=asa_company_id
             )
 
             return Import(
@@ -334,6 +335,7 @@ class AppDslService:
         icon_type: Optional[str] = None,
         icon: Optional[str] = None,
         icon_background: Optional[str] = None,
+        asa_company_id: Optional[str] = None,
     ) -> App:
         """Create a new app or update an existing one."""
         app_data = data.get("app", {})
@@ -355,6 +357,7 @@ class AppDslService:
             app.icon = icon
             app.icon_background = icon_background or app_data.get("icon_background", app.icon_background)
             app.updated_by = account.id
+            app.asa_company_id = asa_company_id
         else:
             # Create new app
             app = App()
@@ -371,6 +374,7 @@ class AppDslService:
             app.use_icon_as_answer_icon = app_data.get("use_icon_as_answer_icon", False)
             app.created_by = account.id
             app.updated_by = account.id
+            app.asa_company_id = asa_company_id
 
             self._session.add(app)
             self._session.commit()
