@@ -310,6 +310,8 @@ export type AppIconType = 'image' | 'emoji'
 export type App = {
   /** App ID */
   id: string
+  /** App ID */
+  param_id: string | null
   /** Name */
   name: string
   /** Description */

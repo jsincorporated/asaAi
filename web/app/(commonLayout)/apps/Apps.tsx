@@ -25,6 +25,7 @@ import Input from '@/app/components/base/input'
 import { useStore as useTagStore } from '@/app/components/base/tag-management/store'
 import TagManagementModal from '@/app/components/base/tag-management'
 import TagFilter from '@/app/components/base/tag-management/filter'
+import { fetchInstalledAppList as doFetchInstalledAppList } from '@/service/explore'
 
 const getKey = (
   pageIndex: number,
@@ -66,12 +67,31 @@ const Apps = () => {
   const setTagIDs = useCallback((tagIDs: string[]) => {
     setQuery(prev => ({ ...prev, tagIDs }))
   }, [setQuery])
+  const [installedApps, setInstalledApps] = useState([])
+  const fetchInstalledAppList = async () => {
+    const { installed_apps }: any = await doFetchInstalledAppList()
+    setInstalledApps(installed_apps)
+  }
 
   const { data, isLoading, setSize, mutate } = useSWRInfinite(
     (pageIndex: number, previousPageData: AppListResponse) => getKey(pageIndex, previousPageData, activeTab, tagIDs, searchKeywords),
     fetchAppList,
     { revalidateFirstPage: true },
   )
+
+  const transformedData = data?.map(page => ({
+    ...page,
+    data: page.data.map((app) => {
+      const installedApp = installedApps.find(installedApp => installedApp.app.id === app.id)
+
+      return installedApp
+        ? {
+          ...app,
+          param_id: installedApp.id,
+        }
+        : app
+    }),
+  }))
 
   const anchorRef = useRef<HTMLDivElement>(null)
   const options = [
@@ -80,6 +100,10 @@ const Apps = () => {
     { value: 'agent-chat', text: t('app.types.agent'), icon: <RiRobot3Line className='w-[14px] h-[14px] mr-1' /> },
     { value: 'workflow', text: t('app.types.workflow'), icon: <RiExchange2Line className='w-[14px] h-[14px] mr-1' /> },
   ]
+
+  useEffect(() => {
+    fetchInstalledAppList()
+  }, [])
 
   useEffect(() => {
     document.title = `${t('common.menus.apps')} -  Dify`
@@ -146,8 +170,12 @@ const Apps = () => {
       <nav className='grid content-start grid-cols-1 gap-4 px-12 pt-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 grow shrink-0'>
         {isCurrentWorkspaceEditor
           && <NewAppCard onSuccess={mutate} />}
-        {data?.map(({ data: apps }) => apps.map(app => (
-          <AppCard key={app.id} app={app} onRefresh={mutate} />
+        {transformedData?.map(({ data: apps }) => apps.map(app => (
+          <AppCard
+            key={app.id}
+            app={app}
+            onRefresh={mutate}
+          />
         )))}
         <CheckModal />
       </nav>
