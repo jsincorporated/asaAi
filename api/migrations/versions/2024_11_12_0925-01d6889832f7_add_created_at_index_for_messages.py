@@ -24,17 +24,21 @@ def upgrade():
     # ### end Alembic commands ###
 
     # custom asa commands for asa_company_id
-    with op.batch_alter_table('app_model_configs', schema=None) as batch_op:
+    with op.batch_alter_table('apps', schema=None) as batch_op:
         batch_op.add_column(sa.Column('asa_company_id', sa.String(length=255), nullable=True))
 
-    with op.batch_alter_table('apps', schema=None) as batch_op:
+    with op.batch_alter_table('installed_apps', schema=None) as batch_op:
         batch_op.add_column(sa.Column('asa_company_id', sa.String(length=255), nullable=True))
 
     with op.batch_alter_table('workflows', schema=None) as batch_op:
         batch_op.add_column(sa.Column('asa_company_id', sa.String(length=255), nullable=True))
 
-    with op.batch_alter_table('installed_apps', schema=None) as batch_op:
+    with op.batch_alter_table('app_model_configs', schema=None) as batch_op:
         batch_op.add_column(sa.Column('asa_company_id', sa.String(length=255), nullable=True))
+
+    with op.batch_alter_table('datasets', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('asa_company_id', sa.String(length=255), nullable=True))
+        batch_op.add_column(sa.Column('asa_uid', sa.String(length=255), nullable=True))
     # end of custom asa commands for asa_company_id
 
 def downgrade():
@@ -44,10 +48,10 @@ def downgrade():
     # ### end Alembic commands ###
 
     # custom asa commands for asa_company_id
-    with op.batch_alter_table('installed_apps', schema=None) as batch_op:
+    with op.batch_alter_table('apps', schema=None) as batch_op:
         batch_op.drop_column('asa_company_id')
 
-    with op.batch_alter_table('apps', schema=None) as batch_op:
+    with op.batch_alter_table('installed_apps', schema=None) as batch_op:
         batch_op.drop_column('asa_company_id')
 
     with op.batch_alter_table('workflows', schema=None) as batch_op:
@@ -55,4 +59,8 @@ def downgrade():
 
     with op.batch_alter_table('app_model_configs', schema=None) as batch_op:
         batch_op.drop_column('asa_company_id')
+
+    with op.batch_alter_table('datasets', schema=None) as batch_op:
+        batch_op.drop_column('asa_company_id')
+        batch_op.drop_column('asa_uid')
     # end of custom asa commands for asa_company_id

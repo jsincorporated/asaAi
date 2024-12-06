@@ -75,6 +75,8 @@ dataset_detail_fields = {
     "tags": fields.List(fields.Nested(tag_fields)),
     "external_knowledge_info": fields.Nested(external_knowledge_info_fields),
     "external_retrieval_model": fields.Nested(external_retrieval_model_fields, allow_null=True),
+    "asa_company_id": fields.String,
+    "asa_uid": fields.String,
 }
 
 dataset_query_detail_fields = {

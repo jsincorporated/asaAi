@@ -57,6 +57,8 @@ class Dataset(db.Model):
     embedding_model_provider = db.Column(db.String(255), nullable=True)
     collection_binding_id = db.Column(StringUUID, nullable=True)
     retrieval_model = db.Column(JSONB, nullable=True)
+    asa_company_id = db.Column(db.String(255), nullable=True)
+    asa_uid = db.Column(db.String(255), nullable=True)
 
     @property
     def dataset_keyword_table(self):

@@ -109,6 +109,18 @@ class DatasetListApi(DatasetApiResource):
             nullable=True,
             required=False,
         )
+        parser.add_argument(
+            "asa_company_id",
+            type=str,
+            nullable=True,
+            required=False,
+        )
+        parser.add_argument(
+            "asa_uid",
+            type=str,
+            nullable=True,
+            required=False,
+        )
         args = parser.parse_args()
 
         try:
@@ -122,6 +134,8 @@ class DatasetListApi(DatasetApiResource):
                 provider=args["provider"],
                 external_knowledge_api_id=args["external_knowledge_api_id"],
                 external_knowledge_id=args["external_knowledge_id"],
+                asa_company_id=args["asa_company_id"],
+                asa_uid=args["asa_uid"],
             )
         except services.errors.dataset.DatasetNameDuplicateError:
             raise DatasetNameDuplicateError()

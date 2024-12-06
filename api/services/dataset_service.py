@@ -146,10 +146,12 @@ class DatasetService:
         provider: str = "vendor",
         external_knowledge_api_id: Optional[str] = None,
         external_knowledge_id: Optional[str] = None,
+        asa_company_id: Optional[str] = None,
+        asa_uid: Optional[str] = None,
     ):
         # check if dataset name already exists
-        if Dataset.query.filter_by(name=name, tenant_id=tenant_id).first():
-            raise DatasetNameDuplicateError(f"Dataset with name {name} already exists.")
+        # if Dataset.query.filter_by(name=name, tenant_id=tenant_id).first():
+        #     raise DatasetNameDuplicateError(f"Dataset with name {name} already exists.")
         embedding_model = None
         if indexing_technique == "high_quality":
             model_manager = ModelManager()
@@ -166,6 +168,8 @@ class DatasetService:
         dataset.embedding_model = embedding_model.model if embedding_model else None
         dataset.permission = permission or DatasetPermissionEnum.ONLY_ME
         dataset.provider = provider
+        dataset.asa_company_id = asa_company_id
+        dataset.asa_uid = asa_uid
         db.session.add(dataset)
         db.session.flush()
 
