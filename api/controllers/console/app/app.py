@@ -29,6 +29,7 @@ from services.app_service import AppService
 
 ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
 
+
 class AppExportFirestoreApi(Resource):
     @setup_required
     @login_required
@@ -52,6 +53,7 @@ class AppExportFirestoreApi(Resource):
         app_service = AppService()
         app_service.export_to_firestore(args)
         return 201
+
 
 class AppListApi(Resource):
     @setup_required

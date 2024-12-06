@@ -112,7 +112,6 @@ class Workflow(db.Model):
     )
     asa_company_id: Mapped[str] = mapped_column(db.String(255), nullable=True)
 
-
     _environment_variables: Mapped[str] = mapped_column(
         "environment_variables", db.Text, nullable=False, server_default="{}"
     )
