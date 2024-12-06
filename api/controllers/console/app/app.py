@@ -29,6 +29,29 @@ from services.app_service import AppService
 
 ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
 
+class AppExportFirestoreApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @get_app_model
+    @marshal_with(app_detail_fields_with_site)
+    def post(self, app_model):
+        """Export App Firestore"""
+        # The role of the current user in the ta table must be admin, owner, or editor
+        if not current_user.is_editor:
+            raise Forbidden()
+        parser = reqparse.RequestParser()
+        parser.add_argument("appID", type=str, location="json")
+        parser.add_argument("paramID", type=str, location="json")
+        parser.add_argument("name", type=str, location="json")
+        parser.add_argument("description", type=str, location="json")
+        parser.add_argument("icon", type=str, location="json")
+        parser.add_argument("icon_background", type=str, location="json")
+        parser.add_argument("category", type=str, choices=ALLOW_CREATE_APP_MODES, location="json")
+        args = parser.parse_args()
+        app_service = AppService()
+        app_service.export_to_firestore(args)
+        return 201
 
 class AppListApi(Resource):
     @setup_required
@@ -390,6 +413,7 @@ class AppTraceApi(Resource):
 api.add_resource(AppListApi, "/apps")
 api.add_resource(AppApi, "/apps/<uuid:app_id>")
 api.add_resource(AppCopyApi, "/apps/<uuid:app_id>/copy")
+api.add_resource(AppExportFirestoreApi, "/apps/<uuid:app_id>/exportFirestore")
 api.add_resource(AppExportApi, "/apps/<uuid:app_id>/export")
 api.add_resource(AppNameApi, "/apps/<uuid:app_id>/name")
 api.add_resource(AppIconApi, "/apps/<uuid:app_id>/icon")

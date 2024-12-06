@@ -178,12 +178,15 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
 
   const handleFirestoreExport = async () => {
     try {
+      // As of now, category is just the app mode, need to see how we wanna change
       await exportToFirestore({
         appID: app.id,
+        paramID: app.param_id,
         name: app.name,
         icon: app.icon,
         icon_background: app.icon_background,
         description: app.description,
+        category: app.mode,
       })
       setShowFirestoreExportConfirm(false)
       notify({
