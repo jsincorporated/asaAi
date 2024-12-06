@@ -14,7 +14,7 @@ FROM base AS packages
 WORKDIR /app/web
 
 COPY package.json .
-# COPY yarn.lock .
+COPY yarn.lock .
 
 # if you located in China, you can use taobao registry to speed up
 # RUN yarn install --frozen-lockfile --registry https://registry.npmmirror.com/
