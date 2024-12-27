@@ -458,7 +458,7 @@ class DatasetService:
 
 
 class DocumentService:
-    DEFAULT_RULES = {
+    DEFAULT_RULES: dict[str, Any] = {
         "mode": "custom",
         "rules": {
             "pre_processing_rules": [
@@ -472,7 +472,7 @@ class DocumentService:
         },
     }
 
-    DOCUMENT_METADATA_SCHEMA = {
+    DOCUMENT_METADATA_SCHEMA: dict[str, Any] = {
         "book": {
             "title": str,
             "language": str,
