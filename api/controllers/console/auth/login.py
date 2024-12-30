@@ -5,6 +5,7 @@ from flask import request
 from flask_restful import Resource, reqparse  # type: ignore
 
 import services
+from configs import dify_config
 from constants.languages import languages
 from controllers.console import api
 from controllers.console.auth.error import (
@@ -16,6 +17,7 @@ from controllers.console.auth.error import (
 )
 from controllers.console.error import (
     AccountBannedError,
+    AccountInFreezeError,
     AccountNotFound,
     EmailSendIpLimitError,
     NotAllowedCreateWorkspace,
@@ -27,6 +29,8 @@ from libs.passport import PassportService
 from libs.password import valid_password
 from models.account import Account
 from services.account_service import AccountService, RegisterService, TenantService
+from services.billing_service import BillingService
+from services.errors.account import AccountRegisterError
 from services.errors.workspace import WorkSpaceNotAllowedCreateError
 from services.feature_service import FeatureService
 
@@ -46,6 +50,9 @@ class LoginApi(Resource):
         parser.add_argument("invite_token", type=str, required=False, default=None, location="json")
         parser.add_argument("language", type=str, required=False, default="en-US", location="json")
         args = parser.parse_args()
+
+        if dify_config.BILLING_ENABLED and BillingService.is_email_in_freeze(args["email"]):
+            raise AccountInFreezeError()
 
         is_login_error_rate_limit = AccountService.is_login_error_rate_limit(args["email"])
         if is_login_error_rate_limit:
@@ -149,8 +156,10 @@ class ResetPasswordSendEmailApi(Resource):
             language = "zh-Hans"
         else:
             language = "en-US"
-
-        account = AccountService.get_user_through_email(args["email"])
+        try:
+            account = AccountService.get_user_through_email(args["email"])
+        except AccountRegisterError as are:
+            raise AccountInFreezeError()
         if account is None:
             if FeatureService.get_system_features().is_allow_register:
                 token = AccountService.send_reset_password_email(email=args["email"], language=language)
@@ -178,8 +187,11 @@ class EmailCodeLoginSendEmailApi(Resource):
             language = "zh-Hans"
         else:
             language = "en-US"
+        try:
+            account = AccountService.get_user_through_email(args["email"])
+        except AccountRegisterError as are:
+            raise AccountInFreezeError()
 
-        account = AccountService.get_user_through_email(args["email"])
         if account is None:
             if FeatureService.get_system_features().is_allow_register:
                 token = AccountService.send_email_code_login_email(email=args["email"], language=language)
@@ -213,7 +225,10 @@ class EmailCodeLoginApi(Resource):
             raise EmailCodeError()
 
         AccountService.revoke_email_code_login_token(args["token"])
-        account = AccountService.get_user_through_email(user_email)
+        try:
+            account = AccountService.get_user_through_email(user_email)
+        except AccountRegisterError as are:
+            raise AccountInFreezeError()
         if account:
             tenant = TenantService.get_join_tenants(account)
             if not tenant:
@@ -232,6 +247,8 @@ class EmailCodeLoginApi(Resource):
                 )
             except WorkSpaceNotAllowedCreateError:
                 return NotAllowedCreateWorkspace()
+            except AccountRegisterError as are:
+                raise AccountInFreezeError()
         token_pair = AccountService.login(account, ip_address=extract_remote_ip(request))
         AccountService.reset_login_error_rate_limit(args["email"])
         return {"result": "success", "data": token_pair.model_dump()}
