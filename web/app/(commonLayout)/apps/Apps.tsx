@@ -10,35 +10,33 @@ import {
   RiExchange2Line,
   RiMessage3Line,
   RiRobot3Line,
-} from "@remixicon/react";
-import AppCard from "./AppCard";
-import NewAppCard from "./NewAppCard";
-import useAppsQueryState from "./hooks/useAppsQueryState";
-import type { AppListResponse } from "@/models/app";
-import { fetchAppList } from "@/service/apps";
-import { useAppContext } from "@/context/app-context";
-import { NEED_REFRESH_APP_LIST_KEY } from "@/config";
-import { CheckModal } from "@/hooks/use-pay";
-import TabSliderNew from "@/app/components/base/tab-slider-new";
-import { useTabSearchParams } from "@/hooks/use-tab-searchparams";
-import Input from "@/app/components/base/input";
-import { useStore as useTagStore } from "@/app/components/base/tag-management/store";
-import TagManagementModal from "@/app/components/base/tag-management";
-import TagFilter from "@/app/components/base/tag-management/filter";
-import { fetchInstalledAppList as doFetchInstalledAppList } from "@/service/explore";
+} from '@remixicon/react'
+import AppCard from './AppCard'
+import NewAppCard from './NewAppCard'
+import useAppsQueryState from './hooks/useAppsQueryState'
+import type { AppListResponse } from '@/models/app'
+import { fetchAppList } from '@/service/apps'
+import { useAppContext } from '@/context/app-context'
+import { NEED_REFRESH_APP_LIST_KEY } from '@/config'
+import { CheckModal } from '@/hooks/use-pay'
+import TabSliderNew from '@/app/components/base/tab-slider-new'
+import { useTabSearchParams } from '@/hooks/use-tab-searchparams'
+import Input from '@/app/components/base/input'
+import { useStore as useTagStore } from '@/app/components/base/tag-management/store'
+import TagManagementModal from '@/app/components/base/tag-management'
+import TagFilter from '@/app/components/base/tag-management/filter'
+import CheckboxWithLabel from '@/app/components/datasets/create/website/base/checkbox-with-label'
 
 const getKey = (
   pageIndex: number,
   previousPageData: AppListResponse,
   activeTab: string,
+  isCreatedByMe: boolean,
   tags: string[],
   keywords: string
 ) => {
   if (!pageIndex || previousPageData.has_more) {
-    const params: any = {
-      url: "apps",
-      params: { page: pageIndex + 1, limit: 30, name: keywords },
-    };
+    const params: any = { url: 'apps', params: { page: pageIndex + 1, limit: 30, name: keywords, is_created_by_me: isCreatedByMe } }
 
     if (activeTab !== "all") params.params.mode = activeTab;
     else delete params.params.mode;
@@ -57,54 +55,40 @@ const Apps = () => {
     useAppContext();
   const showTagManagementModal = useTagStore((s) => s.showTagManagementModal);
   const [activeTab, setActiveTab] = useTabSearchParams({
-    defaultTab: "all",
-  });
-  const {
-    query: { tagIDs = [], keywords = "" },
-    setQuery,
-  } = useAppsQueryState();
-  const [tagFilterValue, setTagFilterValue] = useState<string[]>(tagIDs);
-  const [searchKeywords, setSearchKeywords] = useState(keywords);
-  const setKeywords = useCallback(
-    (keywords: string) => {
-      setQuery((prev) => ({ ...prev, keywords }));
-    },
-    [setQuery]
-  );
-  const setTagIDs = useCallback(
-    (tagIDs: string[]) => {
-      setQuery((prev) => ({ ...prev, tagIDs }));
-    },
-    [setQuery]
-  );
-  const [installedApps, setInstalledApps] = useState([]);
-  const fetchInstalledAppList = async () => {
-    const { installed_apps }: any = await doFetchInstalledAppList();
-    setInstalledApps(installed_apps);
-  };
+    defaultTab: 'all',
+  })
+  const { query: { tagIDs = [], keywords = '' }, setQuery } = useAppsQueryState()
+  const [isCreatedByMe, setIsCreatedByMe] = useState(false)
+  const [tagFilterValue, setTagFilterValue] = useState<string[]>(tagIDs)
+  const [searchKeywords, setSearchKeywords] = useState(keywords)
+  const setKeywords = useCallback((keywords: string) => {
+    setQuery(prev => ({ ...prev, keywords }))
+  }, [setQuery])
+  const setTagIDs = useCallback((tagIDs: string[]) => {
+    setQuery(prev => ({ ...prev, tagIDs }))
+  }, [setQuery])
 
   const { data, isLoading, setSize, mutate } = useSWRInfinite(
-    (pageIndex: number, previousPageData: AppListResponse) =>
-      getKey(pageIndex, previousPageData, activeTab, tagIDs, searchKeywords),
+    (pageIndex: number, previousPageData: AppListResponse) => getKey(pageIndex, previousPageData, activeTab, isCreatedByMe, tagIDs, searchKeywords),
     fetchAppList,
     { revalidateFirstPage: true }
   );
 
-  const transformedData = data?.map((page) => ({
-    ...page,
-    data: page.data.map((app) => {
-      const installedApp = installedApps.find(
-        (installedApp) => installedApp.app.id === app.id
-      );
+  // const transformedData = data?.map((page) => ({
+  //   ...page,
+  //   data: page.data.map((app) => {
+  //     const installedApp = installedApps.find(
+  //       (installedApp) => installedApp.app.id === app.id
+  //     );
 
-      return installedApp
-        ? {
-            ...app,
-            param_id: installedApp.id,
-          }
-        : app;
-    }),
-  }));
+  //     return installedApp
+  //       ? {
+  //           ...app,
+  //           param_id: installedApp.id,
+  //         }
+  //       : app;
+  //   }),
+  // }));
 
   const anchorRef = useRef<HTMLDivElement>(null);
   const options = [
@@ -130,9 +114,9 @@ const Apps = () => {
     },
   ];
 
-  useEffect(() => {
-    fetchInstalledAppList();
-  }, []);
+  // useEffect(() => {
+  //   fetchInstalledAppList();
+  // }, []);
 
   useEffect(() => {
     document.title = `${t("common.menus.apps")} -  Dify`;
@@ -192,12 +176,14 @@ const Apps = () => {
           onChange={setActiveTab}
           options={options}
         />
-        <div className="flex items-center gap-2">
-          <TagFilter
-            type="app"
-            value={tagFilterValue}
-            onChange={handleTagsChange}
+        <div className='flex items-center gap-2'>
+          <CheckboxWithLabel
+            className='mr-2'
+            label={t('app.showMyCreatedAppsOnly')}
+            isChecked={isCreatedByMe}
+            onChange={() => setIsCreatedByMe(!isCreatedByMe)}
           />
+          <TagFilter type='app' value={tagFilterValue} onChange={handleTagsChange} />
           <Input
             showLeftIcon
             showClearIcon
