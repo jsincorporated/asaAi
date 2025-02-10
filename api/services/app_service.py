@@ -371,7 +371,7 @@ class AppService:
                         meta["tool_icons"][tool_name] = {"background": "#252525", "content": "\ud83d\ude01"}
 
         return meta
-
+    # ASA WIP still need to enable production credentials i think
     def initialize_firestore_client():
         """
         Initialize Firestore client with emulator support or production credentials.
