@@ -594,51 +594,41 @@ services:
       - '${EXPOSE_NGINX_PORT:-80}:${NGINX_PORT:-80}'
       - '${EXPOSE_NGINX_SSL_PORT:-443}:${NGINX_SSL_PORT:-443}'
 
-        # The TiDB vector store.
-        # For production use, please refer to https://github.com/pingcap/tidb-docker-compose
-        tidb:
-          image: pingcap/tidb:v8.4.0
+  # The Weaviate vector store.
+  weaviate:
+    image: semitechnologies/weaviate:1.19.0
+    profiles:
+      - ''
+      - weaviate
+    restart: always
+    volumes:
+      # Mount the Weaviate data directory to the con tainer.
+      - ./volumes/weaviate:/var/lib/weaviate
+    environment:
+      # The Weaviate configurations
+      # You can refer to the [Weaviate](https://weaviate.io/developers/weaviate/config-refs/env-vars) documentation for more information.
+      PERSISTENCE_DATA_PATH: ${WEAVIATE_PERSISTENCE_DATA_PATH:-/var/lib/weaviate}
+      QUERY_DEFAULTS_LIMIT: ${WEAVIATE_QUERY_DEFAULTS_LIMIT:-25}
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: ${WEAVIATE_AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED:-false}
+      DEFAULT_VECTORIZER_MODULE: ${WEAVIATE_DEFAULT_VECTORIZER_MODULE:-none}
+      CLUSTER_HOSTNAME: ${WEAVIATE_CLUSTER_HOSTNAME:-node1}
+      AUTHENTICATION_APIKEY_ENABLED: ${WEAVIATE_AUTHENTICATION_APIKEY_ENABLED:-true}
+      AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_AUTHENTICATION_APIKEY_ALLOWED_KEYS:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
+      AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
+      AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
+      AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
+
+      # Qdrant vector store.
+      # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
+      qdrant:
+          image: langgenius/qdrant:v1.7.3
           profiles:
-            - tidb
-          command:
-            - --store=unistore
+              - qdrant
           restart: always
-
-        # The Weaviate vector store.
-        weaviate:
-            image: semitechnologies/weaviate:1.19.0
-            profiles:
-                - ""
-                - weaviate
-            restart: always
-            volumes:
-                # Mount the Weaviate data directory to the con tainer.
-                - ./volumes/weaviate:/var/lib/weaviate
-            environment:
-                # The Weaviate configurations
-                # You can refer to the [Weaviate](https://weaviate.io/developers/weaviate/config-refs/env-vars) documentation for more information.
-                PERSISTENCE_DATA_PATH: ${WEAVIATE_PERSISTENCE_DATA_PATH:-/var/lib/weaviate}
-                QUERY_DEFAULTS_LIMIT: ${WEAVIATE_QUERY_DEFAULTS_LIMIT:-25}
-                AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: ${WEAVIATE_AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED:-false}
-                DEFAULT_VECTORIZER_MODULE: ${WEAVIATE_DEFAULT_VECTORIZER_MODULE:-none}
-                CLUSTER_HOSTNAME: ${WEAVIATE_CLUSTER_HOSTNAME:-node1}
-                AUTHENTICATION_APIKEY_ENABLED: ${WEAVIATE_AUTHENTICATION_APIKEY_ENABLED:-true}
-                AUTHENTICATION_APIKEY_ALLOWED_KEYS: ${WEAVIATE_AUTHENTICATION_APIKEY_ALLOWED_KEYS:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}
-                AUTHENTICATION_APIKEY_USERS: ${WEAVIATE_AUTHENTICATION_APIKEY_USERS:-hello@dify.ai}
-                AUTHORIZATION_ADMINLIST_ENABLED: ${WEAVIATE_AUTHORIZATION_ADMINLIST_ENABLED:-true}
-                AUTHORIZATION_ADMINLIST_USERS: ${WEAVIATE_AUTHORIZATION_ADMINLIST_USERS:-hello@dify.ai}
-
-        # Qdrant vector store.
-        # (if used, you need to set VECTOR_STORE to qdrant in the api & worker service.)
-        qdrant:
-            image: langgenius/qdrant:v1.7.3
-            profiles:
-                - qdrant
-            restart: always
-            volumes:
-                - ./volumes/qdrant:/qdrant/storage
-            environment:
-                QDRANT_API_KEY: ${QDRANT_API_KEY:-difyai123456}
+          volumes:
+              - ./volumes/qdrant:/qdrant/storage
+          environment:
+              QDRANT_API_KEY: ${QDRANT_API_KEY:-difyai123456}
 
   # The Couchbase vector store.
   couchbase-server:
