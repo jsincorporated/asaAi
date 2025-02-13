@@ -64,5 +64,5 @@ def downgrade():
     with op.batch_alter_table('datasets', schema=None) as batch_op:
         batch_op.drop_column('asa_company_id')
         batch_op.drop_column('asa_uid')
-        # batch_op.drop_column('access_scope')
+        batch_op.drop_column('access_scope')
     # end of custom asa commands
