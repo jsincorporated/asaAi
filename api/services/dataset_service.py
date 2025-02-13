@@ -148,6 +148,7 @@ class DatasetService:
         external_knowledge_id: Optional[str] = None,
         asa_company_id: Optional[str] = None,
         asa_uid: Optional[str] = None,
+        access_scope: Optional[str] = None,
     ):
         # check if dataset name already exists
         # if Dataset.query.filter_by(name=name, tenant_id=tenant_id).first():
@@ -170,6 +171,7 @@ class DatasetService:
         dataset.provider = provider
         dataset.asa_company_id = asa_company_id
         dataset.asa_uid = asa_uid
+        dataset.access_scope = access_scope
         db.session.add(dataset)
         db.session.flush()
 

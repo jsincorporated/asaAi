@@ -77,6 +77,7 @@ dataset_detail_fields = {
     "external_retrieval_model": fields.Nested(external_retrieval_model_fields, allow_null=True),
     "asa_company_id": fields.String,
     "asa_uid": fields.String,
+    "access_scope": fields.String,
 }
 
 dataset_query_detail_fields = {

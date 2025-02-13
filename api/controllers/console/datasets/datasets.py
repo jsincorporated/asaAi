@@ -149,6 +149,12 @@ class DatasetListApi(Resource):
             nullable=True,
             required=False,
         )
+        parser.add_argument(
+            "access_scope",
+            type=str,
+            nullable=True,
+            required=False,
+        )
         args = parser.parse_args()
 
         # The role of the current user in the ta table must be admin, owner, or editor, or dataset_operator
@@ -168,6 +174,7 @@ class DatasetListApi(Resource):
                 external_knowledge_id=args["external_knowledge_id"],
                 asa_company_id=args["asa_company_id"],
                 asa_uid=args["asa_uid"],
+                access_scope=args["access_scope"]
             )
         except services.errors.dataset.DatasetNameDuplicateError:
             raise DatasetNameDuplicateError()

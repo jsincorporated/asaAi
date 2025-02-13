@@ -59,6 +59,7 @@ class Dataset(db.Model):
     retrieval_model = db.Column(JSONB, nullable=True)
     asa_company_id = db.Column(db.String(255), nullable=True)
     asa_uid = db.Column(db.String(255), nullable=True)
+    access_scope = db.Column(db.String(255), nullable=True)
 
     @property
     def dataset_keyword_table(self):
