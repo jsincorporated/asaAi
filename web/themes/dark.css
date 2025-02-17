@@ -21,7 +21,7 @@ html[data-theme="dark"] {
   --color-components-tooltip-bg: #18181bf2;
 
   --color-components-button-primary-text: #fffffff2;
-  --color-components-button-primary-bg: #785900;
+  --color-components-button-primary-bg: #155aef;
   --color-components-button-primary-border: #ffffff1f;
   --color-components-button-primary-bg-hover: #296dff;
   --color-components-button-primary-border-hover: #ffffff33;
@@ -165,9 +165,9 @@ html[data-theme="dark"] {
 
   --color-components-segmented-control-item-active-bg: #ffffff14;
   --color-components-segmented-control-item-active-border: #c8ceda14;
-  --color-components-segmented-control-bg-normal: #18181bb2;
-  --color-components-segmented-control-item-active-accent-bg: #78590033;
-  --color-components-segmented-control-item-active-accent-border: #7859004d;
+  --color-components-segmented-control-bg-normal: #18181bb3;
+  --color-components-segmented-control-item-active-accent-bg: #155aef33;
+  --color-components-segmented-control-item-active-accent-border: #155aef4d;
 
   --color-components-option-card-option-bg: #c8ceda0a;
   --color-components-option-card-option-selected-bg: #ffffff0d;
@@ -206,12 +206,13 @@ html[data-theme="dark"] {
   --color-components-badge-bg-red-soft: #f0443824;
   --color-components-badge-bg-blue-light-soft: #0ba5ec24;
   --color-components-badge-bg-gray-soft: #c8ceda14;
+  --color-components-badge-bg-dimm: #ffffff08;
 
   --color-components-chart-line: #5289ff;
-  --color-components-chart-area-1: #78590033;
-  --color-components-chart-area-2: #7859000a;
+  --color-components-chart-area-1: #155aef33;
+  --color-components-chart-area-2: #155aef0a;
   --color-components-chart-current-1: #5289ff;
-  --color-components-chart-current-2: #7859004d;
+  --color-components-chart-current-2: #155aef4d;
   --color-components-chart-bg: #18181bf2;
 
   --color-components-actionbar-bg: #222225;
@@ -228,7 +229,7 @@ html[data-theme="dark"] {
 
   --color-components-progress-brand-progress: #5289ff;
   --color-components-progress-brand-border: #5289ff;
-  --color-components-progress-brand-bg: #7859000a;
+  --color-components-progress-brand-bg: #155aef0a;
 
   --color-components-progress-white-progress: #ffffff;
   --color-components-progress-white-border: #fffffff2;
@@ -252,7 +253,7 @@ html[data-theme="dark"] {
   --color-components-chat-input-bg-mask-2: #18181b99;
   --color-components-chat-input-border: #c8ceda33;
   --color-components-chat-input-audio-wave-active: #84abff;
-  --color-components-chat-input-audio-bg-alt: #18181be5;
+  --color-components-chat-input-audio-bg-alt: #18181be6;
 
   --color-components-avatar-shape-fill-stop-0: #fffffff2;
   --color-components-avatar-shape-fill-stop-100: #ffffffcc;
@@ -369,7 +370,7 @@ html[data-theme="dark"] {
   --color-text-accent-secondary: #84abff;
   --color-text-accent-light-mode-only: #d9d9de;
   --color-text-text-selected: #155aef4d;
-  --color-text-secondary-on-surface: #ffffffe5;
+  --color-text-secondary-on-surface: #ffffffe6;
   --color-text-logo-text: #e9e9ec;
   --color-text-empty-state-icon: #c8ceda4d;
   --color-text-inverted: #ffffff;
@@ -393,7 +394,7 @@ html[data-theme="dark"] {
   --color-background-gradient-mask-input-clear-2: #393a3e00;
   --color-background-gradient-mask-input-clear-1: #393a3e;
   --color-background-gradient-mask-transparent-dark: #00000000;
-  --color-background-gradient-mask-side-panel-2: #18181be5;
+  --color-background-gradient-mask-side-panel-2: #18181be6;
   --color-background-gradient-mask-side-panel-1: #18181b0a;
 
   --color-background-default-burn: #1d1d20;
@@ -408,7 +409,7 @@ html[data-theme="dark"] {
   --color-background-default-dimmed: #27272b;
   --color-background-default-hover: #27272b;
   --color-background-overlay-alt: #18181b66;
-  --color-background-surface-white: #ffffffe5;
+  --color-background-surface-white: #ffffffe6;
   --color-background-overlay-destructive: #f044384d;
   --color-background-overlay-backdrop: #18181bf2;
 
@@ -429,7 +430,7 @@ html[data-theme="dark"] {
   --color-workflow-block-bg-transparent: #27272bf5;
   --color-workflow-block-border-highlight: #c8ceda33;
 
-  --color-workflow-canvas-workflow-dot-color: #8585ad26;
+  --color-workflow-canvas-workflow-dot-color: #8585ad1c;
   --color-workflow-canvas-workflow-bg: #1d1d20;
 
   --color-workflow-link-line-active: #5289ff;
@@ -451,7 +452,7 @@ html[data-theme="dark"] {
   --color-workflow-minimap-block: #c8ceda14;
 
   --color-workflow-display-success-bg: #17b26a33;
-  --color-workflow-display-success-border-1: #17b26ae5;
+  --color-workflow-display-success-border-1: #17b26ae6;
   --color-workflow-display-success-border-2: #17b26acc;
   --color-workflow-display-success-vignette-color: #17b26a40;
   --color-workflow-display-success-bg-line-pattern: #18181bcc;
@@ -463,19 +464,19 @@ html[data-theme="dark"] {
   --color-workflow-display-outline: #18181bf2;
   --color-workflow-display-error-bg: #f0443833;
   --color-workflow-display-error-bg-line-pattern: #18181bcc;
-  --color-workflow-display-error-border-1: #f04438e5;
+  --color-workflow-display-error-border-1: #f04438e6;
   --color-workflow-display-error-border-2: #f04438cc;
   --color-workflow-display-error-vignette-color: #f0443840;
 
   --color-workflow-display-warning-bg: #f7900933;
   --color-workflow-display-warning-bg-line-pattern: #18181bcc;
-  --color-workflow-display-warning-border-1: #f79009e5;
+  --color-workflow-display-warning-border-1: #f79009e6;
   --color-workflow-display-warning-border-2: #f79009cc;
   --color-workflow-display-warning-vignette-color: #f7900940;
 
   --color-workflow-display-normal-bg: #0ba5ec33;
   --color-workflow-display-normal-bg-line-pattern: #18181bcc;
-  --color-workflow-display-normal-border-1: #0ba5ece5;
+  --color-workflow-display-normal-border-1: #0ba5ece6;
   --color-workflow-display-normal-border-2: #0ba5eccc;
   --color-workflow-display-normal-vignette-color: #0ba5ec40;
 
@@ -502,12 +503,13 @@ html[data-theme="dark"] {
   --color-state-base-hover-alt: #c8ceda24;
   --color-state-base-handle: #c8ceda4d;
   --color-state-base-handle-hover: #c8ceda80;
+  --color-state-base-hover-subtle: #c8ceda0a;
 
-  --color-state-accent-hover: #78590024;
-  --color-state-accent-active: #78590024;
-  --color-state-accent-hover-alt: #78590040;
+  --color-state-accent-hover: #155aef24;
+  --color-state-accent-active: #155aef24;
+  --color-state-accent-hover-alt: #155aef40;
   --color-state-accent-solid: #5289ff;
-  --color-state-accent-active-alt: #78590033;
+  --color-state-accent-active-alt: #155aef33;
 
   --color-state-destructive-hover: #f0443824;
   --color-state-destructive-hover-alt: #f0443840;
@@ -615,7 +617,7 @@ html[data-theme="dark"] {
   --color-util-colors-blue-brand-blue-brand-100: #00329e;
   --color-util-colors-blue-brand-blue-brand-200: #003dc1;
   --color-util-colors-blue-brand-blue-brand-300: #004aeb;
-  --color-util-colors-blue-brand-blue-brand-400: #785900;
+  --color-util-colors-blue-brand-blue-brand-400: #155aef;
   --color-util-colors-blue-brand-blue-brand-500: #296dff;
   --color-util-colors-blue-brand-blue-brand-600: #5289ff;
   --color-util-colors-blue-brand-blue-brand-700: #84abff;
@@ -733,4 +735,5 @@ html[data-theme="dark"] {
 
   --color-saas-background: #0b0b0e;
   --color-saas-pricing-grid-bg: #c8ceda33;
+
 }
