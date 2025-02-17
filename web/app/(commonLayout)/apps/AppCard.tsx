@@ -80,7 +80,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       });
     }
     setShowConfirmDelete(false);
-  }, [app.id]);
+  }, [app.id, mutateApps, notify, onRefresh, t, onPlanInfoChanged]);
 
   const onEdit: CreateAppModalProps["onConfirm"] = useCallback(
     async ({
@@ -182,7 +182,6 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       notify({ type: "error", message: t("app.exportFailed") });
     }
   };
-
   const onSwitch = () => {
     if (onRefresh) onRefresh();
     mutateApps();
