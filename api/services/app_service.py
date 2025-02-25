@@ -376,48 +376,34 @@ class AppService:
         """
         Initialize Firestore client with emulator support or production credentials.
         """
-        # Check if we're in development environment
+        # Check if Firebase has already been initialized
+        try:
+            app = firebase_admin.get_app()
+            print("Firebase already initialized.")
+            return app
+        except ValueError:
+            # No app initialized yet; proceed with initialization.
+            pass
         use_emulator = True
         print(f'Are we using emulator? -> {use_emulator}')
 
         if use_emulator:
-            host = 'host.docker.internal'
-
-            # Set emulator environment variables
+            host = 'localhost'
             os.environ['FIREBASE_AUTH_EMULATOR_HOST'] = f'{host}:9099'
             os.environ['FIRESTORE_EMULATOR_HOST'] = f'{host}:8081'
             os.environ['FIREBASE_DATABASE_EMULATOR_HOST'] = f'{host}:9000'
             os.environ['STORAGE_EMULATOR_HOST'] = f'http://{host}:9198'
             os.environ['GOOGLE_CLOUD_PROJECT'] = 'asa-team'
 
-            # Initialize Firebase Admin SDK for emulator
-            service_account_info = {
-                "type": "service_account",
-                "project_id": "asa-team",
-                "private_key_id": "dummy-private-key-id",
-                "private_key": """-----BEGIN PRIVATE KEY-----
-            MIIBOgIBAAJBAK6Pr0YUVLsbGBA9AvkK+d1jiACk+T1vhHj5H
-            Vv3wMPt6F/XnE58Ol2+fU9ROKugWzh2meN1a2XWiJnpPwIDAQAB
-            -----END PRIVATE KEY-----""",
-                "client_email": "dummy@asa-team.iam.gserviceaccount.com",
-                "client_id": "dummy-client-id",
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/dummy@asa-team.iam.gserviceaccount.com"
-            }
-
-            try:
-                cred = credentials.Certificate(service_account_info)
-                firebase_admin.initialize_app(cred)
-                print("Firebase initialized successfully!")
-            except Exception as e:
-                print(f"Initialization failed: {e}")
-
+            # Initialize without credentials for emulator
+            firebase_admin.initialize_app(options={"projectId": "asa-team"})
+            print("Firebase initialized successfully for emulator!")
         else:
+            from firebase_admin import credentials
             service_account_path = './token-firebase-admin.json'
             cred = credentials.Certificate(service_account_path)
             firebase_admin.initialize_app(credential=cred)
+            print("Firebase initialized successfully for production!")
 
     def export_to_firestore(self, args):
         """
@@ -440,6 +426,7 @@ class AppService:
             "app_id": app_id,
             "parameter_id": args.get("paramID"),
             "category": args.get("category"),
+            "has_knowledge": args.get("has_knowledge_base")
         }
 
         doc_ref = client.collection("workflows").document(app_id)

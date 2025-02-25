@@ -49,6 +49,7 @@ class AppExportFirestoreApi(Resource):
         parser.add_argument("icon", type=str, location="json")
         parser.add_argument("icon_background", type=str, location="json")
         parser.add_argument("category", type=str, choices=ALLOW_CREATE_APP_MODES, location="json")
+        parser.add_argument("has_knowledge_base", type=bool, location="json")
         args = parser.parse_args()
         app_service = AppService()
         app_service.export_to_firestore(args)

@@ -44,6 +44,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const { onPlanInfoChanged } = useProviderContext()
   const { push } = useRouter()
   const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] = useState(false)
+  const [hasKnowledgeBase, setHasKnowledgeBase] = useState(false)
 
   const mutateApps = useContextSelector(
     AppsContext,
@@ -187,6 +188,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         icon_background: app.icon_background,
         description: app.description,
         category: app.mode,
+        has_knowledge_base: hasKnowledgeBase, // Pass the checkbox state
       })
       setShowFirestoreExportConfirm(false)
       notify({
@@ -444,7 +446,21 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       {showFirestoreExportConfirm && (
         <Confirm
           title="Export to Firestore"
-          content="Are you sure you want to export this app to Firestore?"
+          content={
+            <>
+              <p>Are you sure you want to export this app to Firestore?</p>
+              <div className="mt-2">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={hasKnowledgeBase}
+                    onChange={e => setHasKnowledgeBase(e.target.checked)}
+                  />
+                  {' '}Has Knowledge Base
+                </label>
+              </div>
+            </>
+          }
           isShow={showFirestoreExportConfirm}
           onConfirm={handleFirestoreExport}
           onCancel={() => setShowFirestoreExportConfirm(false)}
