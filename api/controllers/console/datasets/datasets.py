@@ -680,6 +680,7 @@ class DatasetRetrievalSettingApi(Resource):
                 | VectorType.LINDORM
                 | VectorType.COUCHBASE
                 | VectorType.MILVUS
+                | VectorType.OPENGAUSS
             ):
                 return {
                     "retrieval_method": [
@@ -723,6 +724,7 @@ class DatasetRetrievalSettingMockApi(Resource):
                 | VectorType.COUCHBASE
                 | VectorType.PGVECTOR
                 | VectorType.LINDORM
+                | VectorType.OPENGAUSS
             ):
                 return {
                     "retrieval_method": [
