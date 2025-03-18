@@ -271,42 +271,67 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
     };
     return (
       <div className="relative w-full py-1" onMouseLeave={onMouseLeave}>
-        <button className={s.actionItem} onClick={onClickSettings}>
-          <span className={s.actionName}>{t("app.editApp")}</span>
+        <button
+          className="h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-base-hover rounded-lg cursor-pointer"
+          onClick={onClickSettings}
+        >
+          <span className="text-text-secondary system-sm-regular">
+            {t("app.editApp")}
+          </span>
         </button>
-        <button className={s.actionItem} onClick={onClickFirestoreExport}>
-          <span className={s.actionName}>{"Firestore"}</span>
+        <button
+          className="h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-base-hover rounded-lg cursor-pointer"
+          onClick={onClickFirestoreExport}
+        >
+          <span className="text-text-secondary system-sm-regular">
+            Firestore
+          </span>
         </button>
         <Divider className="!my-1" />
-        <button className={s.actionItem} onClick={onClickDuplicate}>
-          <span className={s.actionName}>{t("app.duplicate")}</span>
+        <button
+          className="h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-base-hover rounded-lg cursor-pointer"
+          onClick={onClickDuplicate}
+        >
+          <span className="text-text-secondary system-sm-regular">
+            {t("app.duplicate")}
+          </span>
         </button>
-        <button className={s.actionItem} onClick={onClickExport}>
-          <span className={s.actionName}>{t("app.export")}</span>
+        <button
+          className="h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-base-hover rounded-lg cursor-pointer"
+          onClick={onClickExport}
+        >
+          <span className="text-text-secondary system-sm-regular">
+            {t("app.export")}
+          </span>
         </button>
         {(app.mode === "completion" || app.mode === "chat") && (
           <>
             <Divider className="!my-1" />
             <div
-              className="h-9 py-2 px-3 mx-1 flex items-center hover:bg-gray-50 rounded-lg cursor-pointer"
+              className="h-9 py-2 px-3 mx-1 flex items-center hover:bg-state-base-hover rounded-lg cursor-pointer"
               onClick={onClickSwitch}
             >
-              <span className="text-gray-700 text-sm leading-5">
+              <span className="text-text-secondary text-sm leading-5">
                 {t("app.switch")}
               </span>
             </div>
           </>
         )}
         <Divider className="!my-1" />
-        <button className={s.actionItem} onClick={onClickInstalledApp}>
-          <span className={s.actionName}>{t("app.openInExplore")}</span>
+        <button
+          className="h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-base-hover rounded-lg cursor-pointer"
+          onClick={onClickInstalledApp}
+        >
+          <span className="text-text-secondary system-sm-regular">
+            {t("app.openInExplore")}
+          </span>
         </button>
         <Divider className="!my-1" />
         <div
-          className={cn(s.actionItem, s.deleteActionItem, "group")}
+          className="group h-8 w-[calc(100%_-_8px)] py-[6px] px-3 mx-1 flex items-center gap-2 hover:bg-state-destructive-hover rounded-lg cursor-pointer"
           onClick={onClickDelete}
         >
-          <span className={cn(s.actionName, "group-hover:text-red-500")}>
+          <span className="text-text-secondary system-sm-regular group-hover:text-text-destructive">
             {t("common.operation.delete")}
           </span>
         </div>
