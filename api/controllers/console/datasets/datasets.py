@@ -685,6 +685,7 @@ class DatasetRetrievalSettingApi(Resource):
                 | VectorType.MILVUS
                 | VectorType.OPENGAUSS
                 | VectorType.OCEANBASE
+                | VectorType.TABLESTORE
             ):
                 return {
                     "retrieval_method": [
@@ -729,6 +730,7 @@ class DatasetRetrievalSettingMockApi(Resource):
                 | VectorType.LINDORM
                 | VectorType.OPENGAUSS
                 | VectorType.OCEANBASE
+                | VectorType.TABLESTORE
             ):
                 return {
                     "retrieval_method": [
