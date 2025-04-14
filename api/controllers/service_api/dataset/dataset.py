@@ -13,6 +13,7 @@ from fields.dataset_fields import dataset_detail_fields
 from libs.login import current_user
 from models.dataset import Dataset, DatasetPermissionEnum
 from services.dataset_service import DatasetPermissionService, DatasetService
+from services.entities.knowledge_entities.knowledge_entities import RetrievalModel
 
 
 def _validate_name(name):
@@ -138,6 +139,10 @@ class DatasetListApi(DatasetApiResource):
             nullable=True,
             required=False,
         )
+        parser.add_argument("retrieval_model", type=dict, required=False, nullable=True, location="json")
+        parser.add_argument("embedding_model", type=str, required=False, nullable=True, location="json")
+        parser.add_argument("embedding_model_provider", type=str, required=False, nullable=True, location="json")
+
         args = parser.parse_args()
 
         try:
@@ -153,7 +158,10 @@ class DatasetListApi(DatasetApiResource):
                 external_knowledge_id=args["external_knowledge_id"],
                 asa_company_id=args["asa_company_id"],
                 asa_uid=args["asa_uid"],
-                access_scope=args["access_scope"]
+                access_scope=args["access_scope"],
+                embedding_model_provider=args["embedding_model_provider"],
+                embedding_model_name=args["embedding_model"],
+                retrieval_model=RetrievalModel(**args["retrieval_model"]),
             )
         except services.errors.dataset.DatasetNameDuplicateError:
             raise DatasetNameDuplicateError()
