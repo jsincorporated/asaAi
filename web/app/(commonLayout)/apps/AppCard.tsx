@@ -24,6 +24,7 @@ import AppsContext, { useAppContext } from "@/context/app-context";
 import type { HtmlContentProps } from "@/app/components/base/popover";
 import CustomPopover from "@/app/components/base/popover";
 import Divider from "@/app/components/base/divider";
+import { basePath } from "@/utils/var";
 import { getRedirection } from "@/utils/app-redirection";
 import { useProviderContext } from "@/context/provider-context";
 import { NEED_REFRESH_APP_LIST_KEY } from "@/config";
@@ -49,8 +50,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const { isCurrentWorkspaceEditor } = useAppContext();
   const { onPlanInfoChanged } = useProviderContext();
   const { push } = useRouter();
-  const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] =
-    useState(false);
+  const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] = useState(false);
   const [hasKnowledgeBase, setHasKnowledgeBase] = useState(false);
 
   const mutateApps = useContextSelector(
@@ -182,6 +182,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       notify({ type: "error", message: t("app.exportFailed") });
     }
   };
+
   const onSwitch = () => {
     if (onRefresh) onRefresh();
     mutateApps();
@@ -190,7 +191,6 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
 
   const handleFirestoreExport = async () => {
     try {
-      // As of now, category is just the app mode, need to see how we wanna change
       await exportToFirestore({
         appID: app.id,
         paramID: app.param_id,
@@ -199,7 +199,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         icon_background: app.icon_background,
         description: app.description,
         category: app.mode,
-        has_knowledge_base: hasKnowledgeBase, // Pass the checkbox state
+        has_knowledge_base: hasKnowledgeBase,
       });
       setShowFirestoreExportConfirm(false);
       notify({
@@ -263,8 +263,9 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         const { installed_apps }: any =
           (await fetchInstalledAppList(app.id)) || {};
         if (installed_apps?.length > 0)
-          window.open(`/explore/installed/${installed_apps[0].id}`, "_blank");
-        else throw new Error("No app found in Explore");
+          window.open(`${basePath}/explore/installed/${installed_apps[0].id}`, '_blank');
+        else
+          throw new Error('No app found in Explore');
       } catch (e: any) {
         Toast.notify({ type: "error", message: `${e.message || e}` });
       }
