@@ -161,7 +161,9 @@ class DatasetListApi(DatasetApiResource):
                 access_scope=args["access_scope"],
                 embedding_model_provider=args["embedding_model_provider"],
                 embedding_model_name=args["embedding_model"],
-                retrieval_model=RetrievalModel(**args["retrieval_model"]),
+                retrieval_model=RetrievalModel(**args["retrieval_model"])
+                if args["retrieval_model"] is not None
+                else None,
             )
         except services.errors.dataset.DatasetNameDuplicateError:
             raise DatasetNameDuplicateError()
