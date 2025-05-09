@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 import sqlalchemy as sa
 from flask import request
-from flask_login import UserMixin  # type: ignore
+from flask_login import UserMixin
 from sqlalchemy import Float, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
@@ -25,13 +25,13 @@ from constants import DEFAULT_FILE_NUMBER_LIMITS
 from core.file import FILE_MODEL_IDENTITY, File, FileTransferMethod, FileType
 from core.file import helpers as file_helpers
 from libs.helper import generate_string
-from models.base import Base
-from models.enums import CreatedByRole
-from models.workflow import WorkflowRunStatus
 
 from .account import Account, Tenant
+from .base import Base
 from .engine import db
+from .enums import CreatedByRole
 from .types import StringUUID
+from .workflow import WorkflowRunStatus
 
 if TYPE_CHECKING:
     from .workflow import Workflow
@@ -610,7 +610,7 @@ class InstalledApp(Base):
         return tenant
 
 
-class Conversation(db.Model):  # type: ignore[name-defined]
+class Conversation(Base):
     __tablename__ = "conversations"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="conversation_pkey"),
@@ -802,7 +802,7 @@ class Conversation(db.Model):  # type: ignore[name-defined]
 
         for message in messages:
             if message.workflow_run:
-                status_counts[message.workflow_run.status] += 1
+                status_counts[WorkflowRunStatus(message.workflow_run.status)] += 1
 
         return (
             {
@@ -872,7 +872,7 @@ class Conversation(db.Model):  # type: ignore[name-defined]
         }
 
 
-class Message(db.Model):  # type: ignore[name-defined]
+class Message(Base):
     __tablename__ = "messages"
     __table_args__ = (
         PrimaryKeyConstraint("id", name="message_pkey"),
@@ -1219,7 +1219,7 @@ class Message(db.Model):  # type: ignore[name-defined]
         )
 
 
-class MessageFeedback(db.Model):  # type: ignore[name-defined]
+class MessageFeedback(Base):
     __tablename__ = "message_feedbacks"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="message_feedback_pkey"),
@@ -1246,7 +1246,7 @@ class MessageFeedback(db.Model):  # type: ignore[name-defined]
         return account
 
 
-class MessageFile(db.Model):  # type: ignore[name-defined]
+class MessageFile(Base):
     __tablename__ = "message_files"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="message_file_pkey"),
@@ -1287,7 +1287,7 @@ class MessageFile(db.Model):  # type: ignore[name-defined]
     created_at: Mapped[datetime] = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
 
 
-class MessageAnnotation(db.Model):  # type: ignore[name-defined]
+class MessageAnnotation(Base):
     __tablename__ = "message_annotations"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="message_annotation_pkey"),
@@ -1318,7 +1318,7 @@ class MessageAnnotation(db.Model):  # type: ignore[name-defined]
         return account
 
 
-class AppAnnotationHitHistory(db.Model):  # type: ignore[name-defined]
+class AppAnnotationHitHistory(Base):
     __tablename__ = "app_annotation_hit_histories"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="app_annotation_hit_histories_pkey"),
@@ -1330,7 +1330,7 @@ class AppAnnotationHitHistory(db.Model):  # type: ignore[name-defined]
 
     id = db.Column(StringUUID, server_default=db.text("uuid_generate_v4()"))
     app_id = db.Column(StringUUID, nullable=False)
-    annotation_id = db.Column(StringUUID, nullable=False)
+    annotation_id: Mapped[str] = db.Column(StringUUID, nullable=False)
     source = db.Column(db.Text, nullable=False)
     question = db.Column(db.Text, nullable=False)
     account_id = db.Column(StringUUID, nullable=False)
@@ -1356,7 +1356,7 @@ class AppAnnotationHitHistory(db.Model):  # type: ignore[name-defined]
         return account
 
 
-class AppAnnotationSetting(db.Model):  # type: ignore[name-defined]
+class AppAnnotationSetting(Base):
     __tablename__ = "app_annotation_settings"
     __table_args__ = (
         db.PrimaryKeyConstraint("id", name="app_annotation_settings_pkey"),
@@ -1371,26 +1371,6 @@ class AppAnnotationSetting(db.Model):  # type: ignore[name-defined]
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
     updated_user_id = db.Column(StringUUID, nullable=False)
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
-
-    @property
-    def created_account(self):
-        account = (
-            db.session.query(Account)
-            .join(AppAnnotationSetting, AppAnnotationSetting.created_user_id == Account.id)
-            .filter(AppAnnotationSetting.id == self.annotation_id)
-            .first()
-        )
-        return account
-
-    @property
-    def updated_account(self):
-        account = (
-            db.session.query(Account)
-            .join(AppAnnotationSetting, AppAnnotationSetting.updated_user_id == Account.id)
-            .filter(AppAnnotationSetting.id == self.annotation_id)
-            .first()
-        )
-        return account
 
     @property
     def collection_binding_detail(self):
