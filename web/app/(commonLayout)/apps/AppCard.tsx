@@ -1,43 +1,36 @@
 "use client";
 
-import { useContext, useContextSelector } from "use-context-selector";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { RiMoreFill } from "@remixicon/react";
-import s from "./style.module.css";
-import cn from "@/utils/classnames";
-import type { App } from "@/types/app";
-import Confirm from "@/app/components/base/confirm";
-import Toast, { ToastContext } from "@/app/components/base/toast";
-import {
-  copyApp,
-  deleteApp,
-  exportAppConfig,
-  exportToFirestore,
-  updateAppInfo,
-} from "@/service/apps";
-import DuplicateAppModal from "@/app/components/app/duplicate-modal";
-import type { DuplicateAppModalProps } from "@/app/components/app/duplicate-modal";
-import AppIcon from "@/app/components/base/app-icon";
-import AppsContext, { useAppContext } from "@/context/app-context";
-import type { HtmlContentProps } from "@/app/components/base/popover";
-import CustomPopover from "@/app/components/base/popover";
-import Divider from "@/app/components/base/divider";
-import { basePath } from "@/utils/var";
-import { getRedirection } from "@/utils/app-redirection";
-import { useProviderContext } from "@/context/provider-context";
-import { NEED_REFRESH_APP_LIST_KEY } from "@/config";
-import type { CreateAppModalProps } from "@/app/components/explore/create-app-modal";
-import EditAppModal from "@/app/components/explore/create-app-modal";
-import SwitchAppModal from "@/app/components/app/switch-app-modal";
-import type { Tag } from "@/app/components/base/tag-management/constant";
-import TagSelector from "@/app/components/base/tag-management/selector";
-import type { EnvironmentVariable } from "@/app/components/workflow/types";
-import DSLExportConfirmModal from "@/app/components/workflow/dsl-export-confirm-modal";
-import { fetchWorkflowDraft } from "@/service/workflow";
-import { fetchInstalledAppList } from "@/service/explore";
-import { AppTypeIcon } from "@/app/components/app/type-selector";
+import { useContext, useContextSelector } from 'use-context-selector'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { RiMoreFill } from '@remixicon/react'
+import type { App } from '@/types/app'
+import Confirm from '@/app/components/base/confirm'
+import Toast, { ToastContext } from '@/app/components/base/toast'
+import { copyApp, deleteApp, exportAppConfig, updateAppInfo, exportToFirestore } from '@/service/apps'
+import DuplicateAppModal from '@/app/components/app/duplicate-modal'
+import type { DuplicateAppModalProps } from '@/app/components/app/duplicate-modal'
+import AppIcon from '@/app/components/base/app-icon'
+import AppsContext, { useAppContext } from '@/context/app-context'
+import type { HtmlContentProps } from '@/app/components/base/popover'
+import CustomPopover from '@/app/components/base/popover'
+import Divider from '@/app/components/base/divider'
+import { basePath } from '@/utils/var'
+import { getRedirection } from '@/utils/app-redirection'
+import { useProviderContext } from '@/context/provider-context'
+import { NEED_REFRESH_APP_LIST_KEY } from '@/config'
+import type { CreateAppModalProps } from '@/app/components/explore/create-app-modal'
+import EditAppModal from '@/app/components/explore/create-app-modal'
+import SwitchAppModal from '@/app/components/app/switch-app-modal'
+import type { Tag } from '@/app/components/base/tag-management/constant'
+import TagSelector from '@/app/components/base/tag-management/selector'
+import type { EnvironmentVariable } from '@/app/components/workflow/types'
+import DSLExportConfirmModal from '@/app/components/workflow/dsl-export-confirm-modal'
+import { fetchWorkflowDraft } from '@/service/workflow'
+import { fetchInstalledAppList } from '@/service/explore'
+import { AppTypeIcon } from '@/app/components/app/type-selector'
+import cn from '@/utils/classnames'
 
 export type AppCardProps = {
   app: App;
@@ -263,7 +256,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         const { installed_apps }: any =
           (await fetchInstalledAppList(app.id)) || {};
         if (installed_apps?.length > 0)
-          window.open(`${basePath}/explore/installed/${installed_apps[0].id}`, '_blank');
+          window.open(`${basePath}/explore/installed/${installed_apps[0].id}`, '_blank')
         else
           throw new Error('No app found in Explore');
       } catch (e: any) {
