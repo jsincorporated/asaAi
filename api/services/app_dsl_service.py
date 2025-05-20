@@ -100,6 +100,7 @@ class PendingData(BaseModel):
     description: str | None
     icon_type: str | None
     icon: str | None
+    icon_url: str | None
     icon_background: str | None
     app_id: str | None
 
@@ -124,6 +125,7 @@ class AppDslService:
         description: Optional[str] = None,
         icon_type: Optional[str] = None,
         icon: Optional[str] = None,
+        icon_url: Optional[str] = None,
         icon_background: Optional[str] = None,
         app_id: Optional[str] = None,
         asa_company_id: Optional[str] = None,
@@ -249,6 +251,7 @@ class AppDslService:
                     icon_type=icon_type,
                     icon=icon,
                     icon_background=icon_background,
+                    icon_url=icon_url,
                     app_id=app_id,
                 )
                 redis_client.setex(
@@ -289,6 +292,7 @@ class AppDslService:
                 description=description,
                 icon_type=icon_type,
                 icon=icon,
+                icon_url=icon_url,
                 icon_background=icon_background,
                 asa_company_id=asa_company_id,
                 dependencies=check_dependencies_pending_data,
@@ -411,6 +415,7 @@ class AppDslService:
         description: Optional[str] = None,
         icon_type: Optional[str] = None,
         icon: Optional[str] = None,
+        icon_url: Optional[str] = None,
         icon_background: Optional[str] = None,
         asa_company_id: Optional[str] = None,
         dependencies: Optional[list[PluginDependency]] = None,
@@ -424,12 +429,12 @@ class AppDslService:
 
         # Set icon type
         icon_type_value = icon_type or app_data.get("icon_type")
-        if icon_type_value in ["emoji", "link"]:
+        if icon_type_value in ["emoji", "link", "image"]:
             icon_type = icon_type_value
         else:
             icon_type = "emoji"
         icon = icon or str(app_data.get("icon", ""))
-
+        icon_url = icon_url or str(app_data.get("icon_url", ""))
         if app:
             # Update existing app
             app.name = name or app_data.get("name", app.name)
@@ -437,6 +442,7 @@ class AppDslService:
             app.icon_type = icon_type
             app.icon = icon
             app.icon_background = icon_background or app_data.get("icon_background", app.icon_background)
+            app.icon_url = icon_url or app_data.get("icon_url", app.icon_url)
             app.updated_by = account.id
             app.asa_company_id = asa_company_id
         else:
