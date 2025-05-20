@@ -7,6 +7,7 @@ import type {
   WeightedScoreEnum,
 } from '@/models/datasets'
 import type { UploadFileSetting } from '@/app/components/workflow/types'
+import type { AccessMode } from '@/models/access-control'
 
 export enum Theme {
   light = 'light',
@@ -361,6 +362,8 @@ export type App = {
     updated_at: number
     updated_by?: string
   }
+  /** access control */
+  access_mode: AccessMode
 }
 
 export type AppSSO = {
