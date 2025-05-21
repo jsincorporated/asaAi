@@ -3,7 +3,7 @@ import logging
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from enum import Enum, StrEnum
-from typing import TYPE_CHECKING, Any, Optional, Self, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import uuid4
 
 from core.variables import utils as variable_utils
@@ -153,7 +153,7 @@ class Workflow(Base):
         marked_name: str = "",
         marked_comment: str = "",
         asa_company_id: Optional[str] = None,
-    ) -> Self:
+    ) -> "Workflow":
         workflow = Workflow()
         workflow.id = str(uuid4())
         workflow.tenant_id = tenant_id
