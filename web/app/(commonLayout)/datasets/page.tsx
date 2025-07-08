@@ -9,8 +9,4 @@ const AppList = () => {
   return <Container />
 }
 
-export const metadata = {
-  title: 'Datasets - Asa',
-}
-
 export default AppList
