@@ -210,7 +210,7 @@ class AccountService:
         # if not FeatureService.get_system_features().is_allow_register and not is_setup:
         #     from controllers.console.error import AccountNotFound
 
-        raise AccountNotFound()
+        # raise AccountNotFoundError()
 
         if dify_config.BILLING_ENABLED and BillingService.is_email_in_freeze(email):
             raise AccountRegisterError(
