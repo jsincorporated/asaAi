@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -39,27 +39,27 @@ const getKey = (
   activeTab: string,
   isCreatedByMe: boolean,
   tags: string[],
-  keywords: string
+  keywords: string,
 ) => {
   if (!pageIndex || previousPageData.has_more) {
     const params: any = { url: 'apps', params: { page: pageIndex + 1, limit: 30, name: keywords, is_created_by_me: isCreatedByMe } }
 
-    if (activeTab !== "all") params.params.mode = activeTab;
-    else delete params.params.mode;
+    if (activeTab !== 'all') params.params.mode = activeTab
+    else delete params.params.mode
 
-    if (tags.length) params.params.tag_ids = tags;
+    if (tags.length) params.params.tag_ids = tags
 
-    return params;
+    return params
   }
-  return null;
-};
+  return null
+}
 
 const Apps = () => {
-  const { t } = useTranslation();
-  const router = useRouter();
-  const { isCurrentWorkspaceEditor, isCurrentWorkspaceDatasetOperator } =
-    useAppContext();
-  const showTagManagementModal = useTagStore((s) => s.showTagManagementModal);
+  const { t } = useTranslation()
+  const router = useRouter()
+  const { isCurrentWorkspaceEditor, isCurrentWorkspaceDatasetOperator }
+    = useAppContext()
+  const showTagManagementModal = useTagStore(s => s.showTagManagementModal)
   const [activeTab, setActiveTab] = useTabSearchParams({
     defaultTab: 'all',
   })
@@ -116,7 +116,7 @@ const Apps = () => {
   //   }),
   // }));
 
-  const anchorRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null)
   const options = [
     { value: 'all', text: t('app.types.all'), icon: <RiApps2Line className='mr-1 h-[14px] w-[14px]' /> },
     { value: 'workflow', text: t('app.types.workflow'), icon: <RiExchange2Line className='mr-1 h-[14px] w-[14px]' /> },
@@ -131,11 +131,11 @@ const Apps = () => {
       localStorage.removeItem(NEED_REFRESH_APP_LIST_KEY)
       mutate()
     }
-  }, [mutate, t]);
+  }, [mutate, t])
 
   useEffect(() => {
-    if (isCurrentWorkspaceDatasetOperator) return router.replace("/datasets");
-  }, [router, isCurrentWorkspaceDatasetOperator]);
+    if (isCurrentWorkspaceDatasetOperator) return router.replace('/datasets')
+  }, [router, isCurrentWorkspaceDatasetOperator])
 
   useEffect(() => {
     const hasMore = data?.at(-1)?.has_more ?? true
@@ -159,25 +159,25 @@ const Apps = () => {
 
   const { run: handleSearch } = useDebounceFn(
     () => {
-      setSearchKeywords(keywords);
+      setSearchKeywords(keywords)
     },
-    { wait: 500 }
-  );
+    { wait: 500 },
+  )
   const handleKeywordsChange = (value: string) => {
-    setKeywords(value);
-    handleSearch();
-  };
+    setKeywords(value)
+    handleSearch()
+  }
 
   const { run: handleTagsUpdate } = useDebounceFn(
     () => {
-      setTagIDs(tagFilterValue);
+      setTagIDs(tagFilterValue)
     },
-    { wait: 500 }
-  );
+    { wait: 500 },
+  )
   const handleTagsChange = (value: string[]) => {
-    setTagFilterValue(value);
-    handleTagsUpdate();
-  };
+    setTagFilterValue(value)
+    handleTagsUpdate()
+  }
 
   const handleCreatedByMeChange = useCallback(() => {
     const newValue = !isCreatedByMe
@@ -264,13 +264,13 @@ const Apps = () => {
         />
       )}
     </>
-  );
-};
+  )
+}
 
-export default Apps;
+export default Apps
 
 function NoAppsFound() {
-  const { t } = useTranslation();
+  const { t } = useTranslation()
   function renderDefaultCard() {
     const defaultCards = Array.from({ length: 36 }, (_, index) => (
       <div key={index} className='inline-flex h-[160px] rounded-xl bg-background-default-lighter'></div>
@@ -284,5 +284,5 @@ function NoAppsFound() {
         <span className='system-md-medium text-text-tertiary'>{t('app.newApp.noAppsFound')}</span>
       </div>
     </>
-  );
+  )
 }

@@ -182,7 +182,7 @@ class DatasetService:
         retrieval_model: Optional[RetrievalModel] = None,
     ):
         # check if dataset name already exists
-        # if Dataset.query.filter_by(name=name, tenant_id=tenant_id).first():
+        # if db.session.query(Dataset).filter_by(name=name, tenant_id=tenant_id).first():
         #     raise DatasetNameDuplicateError(f"Dataset with name {name} already exists.")
         embedding_model = None
         if indexing_technique == "high_quality":

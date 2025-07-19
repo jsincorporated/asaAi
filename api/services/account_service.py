@@ -16,7 +16,7 @@ from configs import dify_config
 from constants.languages import language_timezone_mapping, languages
 from events.tenant_event import tenant_was_created
 from extensions.ext_database import db
-from extensions.ext_redis import redis_client
+from extensions.ext_redis import redis_client, redis_fallback
 from libs.helper import RateLimiter, TokenManager
 from libs.passport import PassportService
 from libs.password import compare_password, hash_password, valid_password
@@ -60,7 +60,6 @@ from tasks.mail_reset_password_task import send_reset_password_mail_task
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
-    asa_uid: Optional[str] = None
 
 
 REFRESH_TOKEN_PREFIX = "refresh_token:"
@@ -207,10 +206,10 @@ class AccountService:
         is_setup: Optional[bool] = False,
     ) -> Account:
         """create account"""
-        # if not FeatureService.get_system_features().is_allow_register and not is_setup:
-        #     from controllers.console.error import AccountNotFound
+        if not FeatureService.get_system_features().is_allow_register and not is_setup:
+            from controllers.console.error import AccountNotFound
 
-        # raise AccountNotFoundError()
+            raise AccountNotFound()
 
         if dify_config.BILLING_ENABLED and BillingService.is_email_in_freeze(email):
             raise AccountRegisterError(
@@ -349,7 +348,7 @@ class AccountService:
         db.session.commit()
 
     @staticmethod
-    def login(account: Account, *, ip_address: Optional[str] = None, asa_uid: Optional[str] = None) -> TokenPair:
+    def login(account: Account, *, ip_address: Optional[str] = None) -> TokenPair:
         if ip_address:
             AccountService.update_login_info(account=account, ip_address=ip_address)
 
@@ -362,8 +361,7 @@ class AccountService:
 
         AccountService._store_refresh_token(refresh_token, account.id)
 
-        # Include asa uid in the TokenPair if provided
-        return TokenPair(access_token=access_token, refresh_token=refresh_token, asa_uid=asa_uid)
+        return TokenPair(access_token=access_token, refresh_token=refresh_token)
 
     @staticmethod
     def logout(*, account: Account) -> None:
@@ -497,6 +495,7 @@ class AccountService:
         return account
 
     @staticmethod
+    @redis_fallback(default_return=None)
     def add_login_error_rate_limit(email: str) -> None:
         key = f"login_error_rate_limit:{email}"
         count = redis_client.get(key)
@@ -506,6 +505,7 @@ class AccountService:
         redis_client.setex(key, dify_config.LOGIN_LOCKOUT_DURATION, count)
 
     @staticmethod
+    @redis_fallback(default_return=False)
     def is_login_error_rate_limit(email: str) -> bool:
         key = f"login_error_rate_limit:{email}"
         count = redis_client.get(key)
@@ -518,11 +518,13 @@ class AccountService:
         return False
 
     @staticmethod
+    @redis_fallback(default_return=None)
     def reset_login_error_rate_limit(email: str):
         key = f"login_error_rate_limit:{email}"
         redis_client.delete(key)
 
     @staticmethod
+    @redis_fallback(default_return=None)
     def add_forgot_password_error_rate_limit(email: str) -> None:
         key = f"forgot_password_error_rate_limit:{email}"
         count = redis_client.get(key)
@@ -532,6 +534,7 @@ class AccountService:
         redis_client.setex(key, dify_config.FORGOT_PASSWORD_LOCKOUT_DURATION, count)
 
     @staticmethod
+    @redis_fallback(default_return=False)
     def is_forgot_password_error_rate_limit(email: str) -> bool:
         key = f"forgot_password_error_rate_limit:{email}"
         count = redis_client.get(key)
@@ -544,11 +547,13 @@ class AccountService:
         return False
 
     @staticmethod
+    @redis_fallback(default_return=None)
     def reset_forgot_password_error_rate_limit(email: str):
         key = f"forgot_password_error_rate_limit:{email}"
         redis_client.delete(key)
 
     @staticmethod
+    @redis_fallback(default_return=False)
     def is_email_send_ip_limit(ip_address: str):
         minute_key = f"email_send_ip_limit_minute:{ip_address}"
         freeze_key = f"email_send_ip_limit_freeze:{ip_address}"

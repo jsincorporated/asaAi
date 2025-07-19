@@ -1,4 +1,4 @@
-"use client";
+'use client'
 
 import { useContext, useContextSelector } from 'use-context-selector'
 import { useRouter } from 'next/navigation'
@@ -9,7 +9,7 @@ import cn from '@/utils/classnames'
 import type { App } from '@/types/app'
 import Confirm from '@/app/components/base/confirm'
 import Toast, { ToastContext } from '@/app/components/base/toast'
-import { copyApp, deleteApp, exportAppConfig, updateAppInfo, exportToFirestore } from '@/service/apps'
+import { copyApp, deleteApp, exportAppConfig, exportToFirestore, updateAppInfo } from '@/service/apps'
 import DuplicateAppModal from '@/app/components/app/duplicate-modal'
 import type { DuplicateAppModalProps } from '@/app/components/app/duplicate-modal'
 import AppIcon from '@/app/components/base/app-icon'
@@ -41,7 +41,7 @@ import { useGetUserCanAccessApp } from '@/service/access-control'
 export type AppCardProps = {
   app: App;
   onRefresh?: () => void;
-};
+}
 
 const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const { t } = useTranslation()
@@ -55,7 +55,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
 
   const mutateApps = useContextSelector(
     AppsContext,
-    (state) => state.mutateApps
+    state => state.mutateApps,
   )
 
   const [showEditModal, setShowEditModal] = useState(false)
@@ -67,54 +67,54 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
 
   const onConfirmDelete = useCallback(async () => {
     try {
-      await deleteApp(app.id);
-      notify({ type: "success", message: t("app.appDeleted") });
-      if (onRefresh) onRefresh();
-      mutateApps();
-      onPlanInfoChanged();
-    } catch (e: any) {
+      await deleteApp(app.id)
+      notify({ type: 'success', message: t('app.appDeleted') })
+      if (onRefresh) onRefresh()
+      mutateApps()
+      onPlanInfoChanged()
+    }
+ catch (e: any) {
       notify({
-        type: "error",
-        message: `${t("app.appDeleteFailed")}${
-          "message" in e ? `: ${e.message}` : ""
+        type: 'error',
+        message: `${t('app.appDeleteFailed')}${
+          'message' in e ? `: ${e.message}` : ''
         }`,
-      });
+      })
     }
     setShowConfirmDelete(false)
   }, [app.id, mutateApps, notify, onPlanInfoChanged, onRefresh, t])
 
-  const onEdit: CreateAppModalProps["onConfirm"] = useCallback(
-    async ({
-      name,
-      icon_type,
-      icon,
-      icon_background,
-      description,
-      use_icon_as_answer_icon,
-    }) => {
-      try {
-        await updateAppInfo({
-          appID: app.id,
-          name,
-          icon_type,
-          icon,
-          icon_background,
-          description,
-          use_icon_as_answer_icon,
-        });
-        setShowEditModal(false);
-        notify({
-          type: "success",
-          message: t("app.editDone"),
-        });
-        if (onRefresh) onRefresh();
-        mutateApps();
-      } catch (e) {
-        notify({ type: "error", message: t("app.editFailed") });
-      }
-    },
-    [app.id, mutateApps, notify, onRefresh, t]
-  );
+  const onEdit: CreateAppModalProps['onConfirm'] = useCallback(async ({
+    name,
+    icon_type,
+    icon,
+    icon_background,
+    description,
+    use_icon_as_answer_icon,
+  }) => {
+    try {
+      await updateAppInfo({
+        appID: app.id,
+        name,
+        icon_type,
+        icon,
+        icon_background,
+        description,
+        use_icon_as_answer_icon,
+      })
+      setShowEditModal(false)
+      notify({
+        type: 'success',
+        message: t('app.editDone'),
+      })
+      if (onRefresh)
+        onRefresh()
+      mutateApps()
+    }
+    catch {
+      notify({ type: 'error', message: t('app.editFailed') })
+    }
+  }, [app.id, mutateApps, notify, onRefresh, t])
 
   const onCopy: DuplicateAppModalProps['onConfirm'] = async ({ name, icon_type, icon, icon_background }) => {
     try {
@@ -125,65 +125,68 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         icon,
         icon_background,
         mode: app.mode,
-      });
-      setShowDuplicateModal(false);
+      })
+      setShowDuplicateModal(false)
       notify({
-        type: "success",
-        message: t("app.newApp.appCreated"),
-      });
-      localStorage.setItem(NEED_REFRESH_APP_LIST_KEY, "1");
-      if (onRefresh) onRefresh();
-      mutateApps();
-      onPlanInfoChanged();
-      getRedirection(isCurrentWorkspaceEditor, newApp, push);
-    } catch (e) {
-      notify({ type: "error", message: t("app.newApp.appCreateFailed") });
+        type: 'success',
+        message: t('app.newApp.appCreated'),
+      })
+      localStorage.setItem(NEED_REFRESH_APP_LIST_KEY, '1')
+      if (onRefresh) onRefresh()
+      mutateApps()
+      onPlanInfoChanged()
+      getRedirection(isCurrentWorkspaceEditor, newApp, push)
     }
-  };
+ catch (e) {
+      notify({ type: 'error', message: t('app.newApp.appCreateFailed') })
+    }
+  }
 
   const onExport = async (include = false) => {
     try {
       const { data } = await exportAppConfig({
         appID: app.id,
         include,
-      });
-      const a = document.createElement("a");
-      const file = new Blob([data], { type: "application/yaml" });
-      a.href = URL.createObjectURL(file);
-      a.download = `${app.name}.yml`;
-      a.click();
-    } catch (e) {
-      notify({ type: "error", message: t("app.exportFailed") });
+      })
+      const a = document.createElement('a')
+      const file = new Blob([data], { type: 'application/yaml' })
+      a.href = URL.createObjectURL(file)
+      a.download = `${app.name}.yml`
+      a.click()
     }
-  };
+ catch (e) {
+      notify({ type: 'error', message: t('app.exportFailed') })
+    }
+  }
 
   const exportCheck = async () => {
-    if (app.mode !== "workflow" && app.mode !== "advanced-chat") {
-      onExport();
-      return;
+    if (app.mode !== 'workflow' && app.mode !== 'advanced-chat') {
+      onExport()
+      return
     }
     try {
       const workflowDraft = await fetchWorkflowDraft(
-        `/apps/${app.id}/workflows/draft`
-      );
+        `/apps/${app.id}/workflows/draft`,
+      )
       const list = (workflowDraft.environment_variables || []).filter(
-        (env) => env.value_type === "secret"
-      );
+        env => env.value_type === 'secret',
+      )
       if (list.length === 0) {
-        onExport();
-        return;
+        onExport()
+        return
       }
-      setSecretEnvList(list);
-    } catch (e) {
-      notify({ type: "error", message: t("app.exportFailed") });
+      setSecretEnvList(list)
     }
-  };
+ catch (e) {
+      notify({ type: 'error', message: t('app.exportFailed') })
+    }
+  }
 
   const onSwitch = () => {
-    if (onRefresh) onRefresh();
-    mutateApps();
-    setShowSwitchModal(false);
-  };
+    if (onRefresh) onRefresh()
+    mutateApps()
+    setShowSwitchModal(false)
+  }
 
   const handleFirestoreExport = async () => {
     try {
@@ -196,16 +199,17 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         description: app.description,
         category: app.mode,
         has_knowledge_base: hasKnowledgeBase,
-      });
-      setShowFirestoreExportConfirm(false);
+      })
+      setShowFirestoreExportConfirm(false)
       notify({
-        type: "success",
-        message: "Successfully exported to firestore",
-      });
-    } catch (e) {
-      notify({ type: "error", message: t("app.newApp.appCreateFailed") });
+        type: 'success',
+        message: 'Successfully exported to firestore',
+      })
     }
-  };
+ catch (e) {
+      notify({ type: 'error', message: t('app.newApp.appCreateFailed') })
+    }
+  }
 
   const onUpdateAccessControl = useCallback(() => {
     if (onRefresh)
@@ -217,28 +221,28 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const Operations = (props: HtmlContentProps) => {
     const { data: userCanAccessApp, isLoading: isGettingUserCanAccessApp } = useGetUserCanAccessApp({ appId: app?.id, enabled: (!!props?.open && systemFeatures.webapp_auth.enabled) })
     const onMouseLeave = async () => {
-      props.onClose?.();
-    };
+      props.onClose?.()
+    }
     const onClickSettings = async (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      props.onClick?.();
-      e.preventDefault();
-      setShowEditModal(true);
-    };
+      e.stopPropagation()
+      props.onClick?.()
+      e.preventDefault()
+      setShowEditModal(true)
+    }
     const onClickDuplicate = async (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.stopPropagation();
-      props.onClick?.();
-      e.preventDefault();
-      setShowDuplicateModal(true);
-    };
+      e.stopPropagation()
+      props.onClick?.()
+      e.preventDefault()
+      setShowDuplicateModal(true)
+    }
     const onClickFirestoreExport = async (
-      e: React.MouseEvent<HTMLButtonElement>
+      e: React.MouseEvent<HTMLButtonElement>,
     ) => {
-      e.stopPropagation();
-      props.onClick?.();
-      e.preventDefault();
-      setShowFirestoreExportConfirm(true);
-    };
+      e.stopPropagation()
+      props.onClick?.()
+      e.preventDefault()
+      setShowFirestoreExportConfirm(true)
+    }
     const onClickExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
       props.onClick?.()
@@ -268,16 +272,16 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       props.onClick?.()
       e.preventDefault()
       try {
-        const { installed_apps }: any =
-          (await fetchInstalledAppList(app.id)) || {};
+        const { installed_apps }: any = await fetchInstalledAppList(app.id) || {}
         if (installed_apps?.length > 0)
           window.open(`${basePath}/explore/installed/${installed_apps[0].id}`, '_blank')
         else
-          throw new Error('No app found in Explore');
-      } catch (e: any) {
-        Toast.notify({ type: "error", message: `${e.message || e}` });
+          throw new Error('No app found in Explore')
       }
-    };
+      catch (e: any) {
+        Toast.notify({ type: 'error', message: `${e.message || e}` })
+      }
+    }
     return (
       <div className="relative flex w-full flex-col py-1" onMouseLeave={onMouseLeave}>
         <button className='mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickSettings}>
@@ -293,7 +297,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         <button className='mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickExport}>
           <span className='system-sm-regular text-text-secondary'>{t('app.export')}</span>
         </button>
-        {(app.mode === "completion" || app.mode === "chat") && (
+        {(app.mode === 'completion' || app.mode === 'chat') && (
           <>
             <Divider className="my-1" />
             <button
@@ -313,30 +317,30 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
           </>
         }
         <Divider className="my-1" />
-        {systemFeatures.webapp_auth.enabled && isCurrentWorkspaceEditor && (
-          <>
+        {
+          systemFeatures.webapp_auth.enabled && isCurrentWorkspaceEditor && <>
             <button className='mx-1 flex h-8 cursor-pointer items-center rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickAccessControl}>
               <span className='text-sm leading-5 text-text-secondary'>{t('app.accessControl')}</span>
             </button>
             <Divider className='my-1' />
           </>
-        )}
+        }
         <button
           className='group mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 py-[6px] hover:bg-state-destructive-hover'
           onClick={onClickDelete}
         >
-          <span className="system-sm-regular text-text-secondary group-hover:text-text-destructive">
-            {t("common.operation.delete")}
+          <span className='system-sm-regular text-text-secondary group-hover:text-text-destructive'>
+            {t('common.operation.delete')}
           </span>
         </button>
       </div>
-    );
-  };
+    )
+  }
 
-  const [tags, setTags] = useState<Tag[]>(app.tags);
+  const [tags, setTags] = useState<Tag[]>(app.tags)
   useEffect(() => {
-    setTags(app.tags);
-  }, [app.tags]);
+    setTags(app.tags)
+  }, [app.tags])
 
   const EditTimeText = useMemo(() => {
     const timeText = formatTime({
@@ -351,8 +355,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
     <>
       <div
         onClick={(e) => {
-          e.preventDefault();
-          getRedirection(isCurrentWorkspaceEditor, app, push);
+          e.preventDefault()
+          getRedirection(isCurrentWorkspaceEditor, app, push)
         }}
         className='group relative col-span-1 inline-flex h-[160px] cursor-pointer flex-col rounded-xl border-[1px] border-solid border-components-card-border bg-components-card-bg shadow-sm transition-all duration-200 ease-in-out hover:shadow-lg'
       >
@@ -374,7 +378,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
             <div className='flex items-center gap-1 text-[10px] font-medium leading-[18px] text-text-tertiary'>
               <div className='truncate' title={app.author_name}>{app.author_name}</div>
               <div>·</div>
-              <div className='truncate'>{EditTimeText}</div>
+              <div className='truncate' title={EditTimeText}>{EditTimeText}</div>
             </div>
           </div>
           <div className='flex h-5 w-5 shrink-0 items-center justify-center'>
@@ -392,11 +396,11 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
             </Tooltip>}
           </div>
         </div>
-        <div className="title-wrapper h-[90px] px-[14px] text-xs leading-normal text-text-tertiary">
+        <div className='title-wrapper h-[90px] px-[14px] text-xs leading-normal text-text-tertiary'>
           <div
             className={cn(
-              tags.length ? "line-clamp-2" : "line-clamp-4",
-              "group-hover:line-clamp-2"
+              tags.length ? 'line-clamp-2' : 'line-clamp-4',
+              'group-hover:line-clamp-2',
             )}
             title={app.description}
           >
@@ -421,7 +425,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
                     position="bl"
                     type="app"
                     targetID={app.id}
-                    value={tags.map((tag) => tag.id)}
+                    value={tags.map(tag => tag.id)}
                     selectedTags={tags}
                     onCacheUpdate={setTags}
                     onChange={onRefresh}
@@ -441,7 +445,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
                       <RiMoreFill className='h-4 w-4 text-text-tertiary' />
                     </div>
                   }
-                  btnClassName={(open) =>
+                  btnClassName={open =>
                     cn(
                       open ? '!bg-black/5 !shadow-none' : '!bg-transparent',
                       'h-8 w-8 rounded-md border-none !p-2 hover:!bg-black/5',
@@ -497,8 +501,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       )}
       {showConfirmDelete && (
         <Confirm
-          title={t("app.deleteAppConfirmTitle")}
-          content={t("app.deleteAppConfirmContent")}
+          title={t('app.deleteAppConfirmTitle')}
+          content={t('app.deleteAppConfirmContent')}
           isShow={showConfirmDelete}
           onConfirm={onConfirmDelete}
           onCancel={() => setShowConfirmDelete(false)}
@@ -515,8 +519,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
                   <input
                     type="checkbox"
                     checked={hasKnowledgeBase}
-                    onChange={(e) => setHasKnowledgeBase(e.target.checked)}
-                  />{" "}
+                    onChange={e => setHasKnowledgeBase(e.target.checked)}
+                  />{' '}
                   Has Knowledge Base
                 </label>
               </div>
@@ -538,7 +542,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
         <AccessControl app={app} onConfirm={onUpdateAccessControl} onClose={() => setShowAccessControl(false)} />
       )}
     </>
-  );
-};
+  )
+}
 
-export default AppCard;
+export default AppCard
