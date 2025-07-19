@@ -134,7 +134,7 @@ class SharedAccountLoginApi(Resource):
             )
 
         # Include `asa_uid` in the login metadata for tracking
-        token_pair = AccountService.login(account=account, asa_uid=asa_uid)
+        token_pair = AccountService.login(account=account)
         print('token_pair', token_pair)
         AccountService.reset_login_error_rate_limit(user_email)
         return {"result": "success", "data": token_pair.model_dump()}
