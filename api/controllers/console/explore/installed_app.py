@@ -19,6 +19,7 @@ from services.account_service import TenantService
 from services.app_service import AppService
 from services.enterprise.enterprise_service import EnterpriseService
 from services.feature_service import FeatureService
+from services.tag_service import TagService
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class InstalledAppsListApi(Resource):
     @marshal_with(installed_app_list_fields)
     def get(self):
         app_id = request.args.get("app_id", default=None, type=str)
+        tag_names = request.args.get("tag_names", default=None, type=str)
         current_tenant_id = current_user.current_tenant_id
 
         if app_id:
@@ -54,6 +56,31 @@ class InstalledAppsListApi(Resource):
             for installed_app in installed_apps
             if installed_app.app is not None
         ]
+
+        # Filter by tag names if provided
+        if tag_names:
+            tag_name_list = [name.strip() for name in tag_names.split(",")]
+            tag_ids = []
+            
+            # Get tag IDs for the given tag names
+            for tag_name in tag_name_list:
+                tags = TagService.get_tag_by_tag_name("app", current_user.current_tenant_id, tag_name)
+                if tags:
+                    tag_ids.extend([tag.id for tag in tags])
+            
+            # Filter installed apps by tag IDs
+            if tag_ids:
+                filtered_apps = []
+                for installed_app in installed_app_list:
+                    app_tags = installed_app["app"].tags
+                    app_tag_ids = [tag.id for tag in app_tags]
+                    # If any of the app's tags match the requested tags, include it
+                    if any(tag_id in tag_ids for tag_id in app_tag_ids):
+                        filtered_apps.append(installed_app)
+                installed_app_list = filtered_apps
+            else:
+                # If tag names were provided but no matching tags found, return empty result
+                return {"installed_apps": []}
 
         # filter out apps that user doesn't have access to
         if FeatureService.get_system_features().webapp_auth.enabled:

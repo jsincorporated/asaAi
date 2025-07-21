@@ -24,6 +24,7 @@ from services.app_dsl_service import AppDslService, ImportMode
 from services.app_service import AppService
 from services.enterprise.enterprise_service import EnterpriseService
 from services.feature_service import FeatureService
+from services.tag_service import TagService
 
 ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
 
@@ -89,12 +90,39 @@ class AppListApi(Resource):
         )
         parser.add_argument("name", type=str, location="args", required=False)
         parser.add_argument("tag_ids", type=uuid_list, location="args", required=False)
+        parser.add_argument("tag_names", type=str, location="args", required=False)
         parser.add_argument("is_created_by_me", type=inputs.boolean, location="args", required=False)
 
         args = parser.parse_args()
 
         # get app list
         app_service = AppService()
+        
+        # Filter by tag names if provided
+        if args.get("tag_names"):
+            tag_names = [name.strip() for name in args["tag_names"].split(",")]
+            tag_ids = []
+            
+            # Get tag IDs for the given tag names
+            for tag_name in tag_names:
+                tags = TagService.get_tag_by_tag_name("app", current_user.current_tenant_id, tag_name)
+                if tags:
+                    tag_ids.extend([tag.id for tag in tags])
+            
+            # If tag IDs were found, add them to args
+            if tag_ids:
+                if args.get("tag_ids"):
+                    # Combine with existing tag_ids if any
+                    existing_ids = args["tag_ids"]
+                    # Deduplicate while preserving order
+                    combined_ids = existing_ids + tag_ids
+                    args["tag_ids"] = list(dict.fromkeys(combined_ids))
+                else:
+                    args["tag_ids"] = tag_ids
+            elif args.get("tag_names") and not args.get("tag_ids"):
+                # If tag names were provided but no matching tags found, return empty result
+                return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
+        
         app_pagination = app_service.get_paginate_apps(current_user.id, current_user.current_tenant_id, args)
         if not app_pagination:
             return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
