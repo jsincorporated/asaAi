@@ -31,6 +31,7 @@ from fields.document_fields import document_status_fields
 from libs.login import login_required
 from models import ApiToken, Dataset, Document, DocumentSegment, UploadFile
 from models.dataset import DatasetPermissionEnum
+from services.app_dsl_service import AppDslService
 from services.dataset_service import DatasetPermissionService, DatasetService, DocumentService
 
 
@@ -814,6 +815,44 @@ class DatasetAutoDisableLogApi(Resource):
             raise NotFound("Dataset not found.")
         return DatasetService.get_dataset_auto_disable_logs(dataset_id_str), 200
 
+class DatasetEncryptionApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """
+        Encrypt a dataset ID (Custom asa endpoint)
+        """
+        # The role of the current user in the ta table must be admin, owner, or editor
+        if not current_user.is_editor:
+            raise Forbidden()
+            
+        parser = reqparse.RequestParser()
+        parser.add_argument('dataset_id', type=str, required=True, location='json')
+        args = parser.parse_args()
+        
+        dataset_id = args['dataset_id']
+        
+        # Validate that the dataset exists and the user has access to it
+        dataset = DatasetService.get_dataset(dataset_id)
+        if dataset is None:
+            raise NotFound("Dataset not found.")
+        
+        try:
+            DatasetService.check_dataset_permission(dataset, current_user)
+        except services.errors.account.NoPermissionError as e:
+            raise Forbidden(str(e))
+        
+        # Encrypt the dataset ID
+        encrypted_id = AppDslService.encrypt_dataset_id(
+            dataset_id=dataset_id,
+            tenant_id=current_user.current_tenant_id
+        )
+        
+        return {
+            'encrypted_id': encrypted_id
+        }, 200
+
 
 api.add_resource(DatasetListApi, "/datasets")
 api.add_resource(DatasetApi, "/datasets/<uuid:dataset_id>")
@@ -830,3 +869,4 @@ api.add_resource(DatasetRetrievalSettingApi, "/datasets/retrieval-setting")
 api.add_resource(DatasetRetrievalSettingMockApi, "/datasets/retrieval-setting/<string:vector_type>")
 api.add_resource(DatasetPermissionUserListApi, "/datasets/<uuid:dataset_id>/permission-part-users")
 api.add_resource(DatasetAutoDisableLogApi, "/datasets/<uuid:dataset_id>/auto-disable-logs")
+api.add_resource(DatasetEncryptionApi, "/datasets/encrypt")
