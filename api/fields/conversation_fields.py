@@ -68,6 +68,8 @@ message_detail_fields = {
     "message_tokens": fields.Integer,
     "answer": fields.String(attribute="re_sign_file_url_answer"),
     "answer_tokens": fields.Integer,
+    "total_price": fields.Float,
+    "currency": fields.String,
     "provider_response_latency": fields.Float,
     "from_source": fields.String,
     "from_end_user_id": fields.String,
@@ -209,3 +211,11 @@ conversation_infinite_scroll_pagination_fields = {
     "has_more": fields.Boolean,
     "data": fields.List(fields.Nested(simple_conversation_fields)),
 }
+
+conversation_statistics_fields = {
+    "total_messages": fields.Integer,
+    "total_tokens": fields.Integer,
+    "total_price": fields.Float,
+    "currency": fields.String,
+}
+
