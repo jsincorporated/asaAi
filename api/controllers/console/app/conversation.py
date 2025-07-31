@@ -1,5 +1,5 @@
-from datetime import UTC, datetime
 import decimal
+from datetime import UTC, datetime
 
 import pytz  # pip install pytz
 from flask_login import current_user
@@ -25,44 +25,6 @@ from libs.helper import DatetimeString
 from libs.login import login_required
 from models import Conversation, EndUser, Message, MessageAnnotation
 from models.model import AppMode
-
-# Custom ASA endpoint
-class ConversationStatisticsApi(Resource):
-    @setup_required
-    @login_required
-    @account_initialization_required
-    @get_app_model(mode=[AppMode.CHAT, AppMode.AGENT_CHAT, AppMode.ADVANCED_CHAT, AppMode.COMPLETION])
-    @marshal_with(conversation_statistics_fields)
-    def get(self, app_model, conversation_id):
-        if not current_user.is_editor:
-            raise Forbidden()
-        conversation_id = str(conversation_id)
-
-        conversation = _get_conversation(app_model, conversation_id)
-
-        # Fetch all messages for the conversation
-        messages = db.session.query(Message).filter(Message.conversation_id == conversation.id).all()
-
-        total_messages = len(messages)
-        total_tokens = 0
-        total_price = decimal.Decimal(0.0)
-        currency = "USD"  # Default currency
-
-        for message in messages:
-            total_tokens += message.message_tokens + message.answer_tokens
-            if message.total_price:
-                total_price += message.total_price
-            if message.currency:
-                currency = message.currency
-
-        return {
-            "total_messages": total_messages,
-            "total_tokens": total_tokens,
-            "total_price": total_price,
-            "currency": currency,
-        }
-
-
 
 class CompletionConversationApi(Resource):
     @setup_required
@@ -335,6 +297,43 @@ class ChatConversationDetailApi(Resource):
         db.session.commit()
 
         return {"result": "success"}, 204
+
+
+# Custom ASA endpoint
+class ConversationStatisticsApi(Resource):
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @get_app_model(mode=[AppMode.CHAT, AppMode.AGENT_CHAT, AppMode.ADVANCED_CHAT, AppMode.COMPLETION])
+    @marshal_with(conversation_statistics_fields)
+    def get(self, app_model, conversation_id):
+        if not current_user.is_editor:
+            raise Forbidden()
+        conversation_id = str(conversation_id)
+
+        conversation = _get_conversation(app_model, conversation_id)
+
+        # Fetch all messages for the conversation
+        messages = db.session.query(Message).filter(Message.conversation_id == conversation.id).all()
+
+        total_messages = len(messages)
+        total_tokens = 0
+        total_price = decimal.Decimal(0.0)
+        currency = "USD"  # Default currency
+
+        for message in messages:
+            total_tokens += message.message_tokens + message.answer_tokens
+            if message.total_price:
+                total_price += message.total_price
+            if message.currency:
+                currency = message.currency
+
+        return {
+            "total_messages": total_messages,
+            "total_tokens": total_tokens,
+            "total_price": total_price,
+            "currency": currency,
+        }
 
 
 api.add_resource(CompletionConversationApi, "/apps/<uuid:app_id>/completion-conversations")

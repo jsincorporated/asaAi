@@ -116,3 +116,10 @@ workflow_run_node_execution_fields = {
 workflow_run_node_execution_list_fields = {
     "data": fields.List(fields.Nested(workflow_run_node_execution_fields)),
 }
+
+workflow_run_statistics_fields = {
+    "total_tokens": fields.Integer,
+    "total_price": fields.Float,
+    "currency": fields.String,
+}
+
