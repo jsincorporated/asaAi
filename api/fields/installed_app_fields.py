@@ -14,6 +14,7 @@ app_fields = {
     "icon_url": AppIconUrlField,
     "use_icon_as_answer_icon": fields.Boolean,
     "tags": fields.List(fields.Nested(tag_fields)),
+    "description": fields.String,
 }
 
 installed_app_fields = {
