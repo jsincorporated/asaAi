@@ -4,6 +4,30 @@ import type { CommonResponse } from '@/models/common'
 import type { AppIconType, AppModeEnum, ModelConfig } from '@/types/app'
 import { del, get, patch, post, put } from './base'
 
+export const exportToFirestore = ({
+  appID,
+  paramID,
+  name,
+  icon,
+  icon_background,
+  description,
+  category,
+  has_knowledge_base,
+}: {
+  appID: string
+  paramID?: string | null
+  name: string
+  icon: string
+  icon_background?: string | null
+  description?: string
+  category: string
+  has_knowledge_base: boolean
+}): Promise<AppDetailResponse> => {
+  return post<AppDetailResponse>(`apps/${appID}/exportFirestore`, {
+    body: { appID, paramID, name, icon, icon_background, description, category, has_knowledge_base },
+  })
+}
+
 export const fetchAppList = ({ url, params }: { url: string, params?: Record<string, any> }): Promise<AppListResponse> => {
   return get<AppListResponse>(url, { params })
 }

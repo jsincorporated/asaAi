@@ -1,4 +1,4 @@
-from flask_restx import Api, Namespace, fields
+from flask_restful import fields
 
 from fields.member_fields import simple_account_fields
 from libs.helper import TimestampField
@@ -45,12 +45,6 @@ message_file_fields = {
     "upload_file_id": fields.String(default=None),
 }
 
-
-def build_message_file_model(api_or_ns: Api | Namespace):
-    """Build the message file fields for the API or Namespace."""
-    return api_or_ns.model("MessageFile", message_file_fields)
-
-
 agent_thought_fields = {
     "id": fields.String,
     "chain_id": fields.String,
@@ -74,6 +68,8 @@ message_detail_fields = {
     "message_tokens": fields.Integer,
     "answer": fields.String(attribute="re_sign_file_url_answer"),
     "answer_tokens": fields.Integer,
+    "total_price": fields.Float,
+    "currency": fields.String,
     "provider_response_latency": fields.Float,
     "from_source": fields.String,
     "from_end_user_id": fields.String,
@@ -216,21 +212,10 @@ conversation_infinite_scroll_pagination_fields = {
     "data": fields.List(fields.Nested(simple_conversation_fields)),
 }
 
+conversation_statistics_fields = {
+    "total_messages": fields.Integer,
+    "total_tokens": fields.Integer,
+    "total_price": fields.Float,
+    "currency": fields.String,
+}
 
-def build_conversation_infinite_scroll_pagination_model(api_or_ns: Api | Namespace):
-    """Build the conversation infinite scroll pagination model for the API or Namespace."""
-    simple_conversation_model = build_simple_conversation_model(api_or_ns)
-
-    copied_fields = conversation_infinite_scroll_pagination_fields.copy()
-    copied_fields["data"] = fields.List(fields.Nested(simple_conversation_model))
-    return api_or_ns.model("ConversationInfiniteScrollPagination", copied_fields)
-
-
-def build_conversation_delete_model(api_or_ns: Api | Namespace):
-    """Build the conversation delete model for the API or Namespace."""
-    return api_or_ns.model("ConversationDelete", conversation_delete_fields)
-
-
-def build_simple_conversation_model(api_or_ns: Api | Namespace):
-    """Build the simple conversation model for the API or Namespace."""
-    return api_or_ns.model("SimpleConversation", simple_conversation_fields)

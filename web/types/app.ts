@@ -324,6 +324,8 @@ export type AppIconType = 'image' | 'emoji'
 export type App = {
   /** App ID */
   id: string
+  /** Param ID for Firestore */
+  param_id: string | null
   /** Name */
   name: string
   /** Description */

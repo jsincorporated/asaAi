@@ -1,0 +1,110 @@
+diff --git a/api/models/dataset.py b/api/models/dataset.py
+index 1ec27203a0..e426ef828a 100644
+--- a/api/models/dataset.py
++++ b/api/models/dataset.py
+@@ -63,6 +63,9 @@ class Dataset(Base):
+     collection_binding_id = db.Column(StringUUID, nullable=True)
+     retrieval_model = db.Column(JSONB, nullable=True)
+     built_in_field_enabled = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
++    asa_company_id = db.Column(db.String(255), nullable=True)
++    asa_uid = db.Column(db.String(255), nullable=True)
++    access_scope = db.Column(db.String(255), nullable=True)
+ 
+     @property
+     def dataset_keyword_table(self):
+diff --git a/api/models/model.py b/api/models/model.py
+index b1007c4a79..51336276a2 100644
+--- a/api/models/model.py
++++ b/api/models/model.py
+@@ -100,7 +100,8 @@ class App(Base):
+     updated_by = db.Column(StringUUID, nullable=True)
+     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
+     use_icon_as_answer_icon = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+-
++    asa_company_id = db.Column(db.String(255), nullable=True)  # New column
++    
+     @property
+     def desc_or_prompt(self):
+         if self.description:
+@@ -336,6 +337,7 @@ class AppModelConfig(Base):
+     dataset_configs = db.Column(db.Text)
+     external_data_tools = db.Column(db.Text)
+     file_upload = db.Column(db.Text)
++    asa_company_id = db.Column(db.String(255))
+ 
+     @property
+     def app(self):
+@@ -478,6 +480,7 @@ class AppModelConfig(Base):
+             "completion_prompt_config": self.completion_prompt_config_dict,
+             "dataset_configs": self.dataset_configs_dict,
+             "file_upload": self.file_upload_dict,
++            "asa_company_id": self.asa_company_id
+         }
+ 
+     def from_model_config_dict(self, model_config: Mapping[str, Any]):
+@@ -524,6 +527,9 @@ class AppModelConfig(Base):
+             json.dumps(model_config.get("dataset_configs")) if model_config.get("dataset_configs") else None
+         )
+         self.file_upload = json.dumps(model_config.get("file_upload")) if model_config.get("file_upload") else None
++        self.asa_company_id = (
++            json.dumps(model_config.get("asa_company_id")) if model_config.get("asa_company_id") else None
++        ) 
+         return self
+ 
+     def copy(self):
+@@ -549,6 +555,7 @@ class AppModelConfig(Base):
+             completion_prompt_config=self.completion_prompt_config,
+             dataset_configs=self.dataset_configs,
+             file_upload=self.file_upload,
++            asa_company_id=self.asa_company_id,
+         )
+ 
+         return new_app_model_config
+@@ -599,6 +606,7 @@ class InstalledApp(Base):
+     is_pinned = db.Column(db.Boolean, nullable=False, server_default=db.text("false"))
+     last_used_at = db.Column(db.DateTime, nullable=True)
+     created_at = db.Column(db.DateTime, nullable=False, server_default=func.current_timestamp())
++    asa_company_id = db.Column(db.String(255), nullable=True)
+ 
+     @property
+     def app(self):
+diff --git a/api/models/workflow.py b/api/models/workflow.py
+index 77d48bec4f..b34a21477e 100644
+--- a/api/models/workflow.py
++++ b/api/models/workflow.py
+@@ -140,6 +140,8 @@ class Workflow(Base):
+         default=datetime.now(UTC).replace(tzinfo=None),
+         server_onupdate=func.current_timestamp(),
+     )
++    asa_company_id: Mapped[str] = mapped_column(db.String(255), nullable=True)
++
+     _environment_variables: Mapped[str] = mapped_column(
+         "environment_variables", db.Text, nullable=False, server_default="{}"
+     )
+@@ -164,6 +166,7 @@ class Workflow(Base):
+         conversation_variables: Sequence[Variable],
+         marked_name: str = "",
+         marked_comment: str = "",
++        asa_company_id: Optional[str] = None,
+     ) -> "Workflow":
+         workflow = Workflow()
+         workflow.id = str(uuid4())
+@@ -180,6 +183,7 @@ class Workflow(Base):
+         workflow.marked_comment = marked_comment
+         workflow.created_at = datetime.now(UTC).replace(tzinfo=None)
+         workflow.updated_at = workflow.created_at
++        workflow.asa_company_id = asa_company_id
+         return workflow
+ 
+     @property
+@@ -189,6 +193,10 @@ class Workflow(Base):
+     @property
+     def updated_by_account(self):
+         return db.session.get(Account, self.updated_by) if self.updated_by else None
++    
++    @property
++    def created_by_company(self):
++        return db.session.get(Account, self.asa_company_id) if self.asa_company_id else None
+ 
+     @property
+     def graph_dict(self) -> Mapping[str, Any]:

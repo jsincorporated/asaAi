@@ -1,0 +1,582 @@
+diff --git a/api/controllers/console/app/app.py b/api/controllers/console/app/app.py
+index 860166a61a..f230a013ed 100644
+--- a/api/controllers/console/app/app.py
++++ b/api/controllers/console/app/app.py
+@@ -24,10 +24,37 @@ from services.app_dsl_service import AppDslService, ImportMode
+ from services.app_service import AppService
+ from services.enterprise.enterprise_service import EnterpriseService
+ from services.feature_service import FeatureService
++from services.tag_service import TagService
+ 
+ ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
+ 
+ 
++class AppExportFirestoreApi(Resource):
++    @setup_required
++    @login_required
++    @account_initialization_required
++    @get_app_model
++    @marshal_with(app_detail_fields_with_site)
++    def post(self, app_model):
++        """Export App Firestore"""
++        # The role of the current user in the ta table must be admin, owner, or editor
++        if not current_user.is_editor:
++            raise Forbidden()
++        parser = reqparse.RequestParser()
++        parser.add_argument("appID", type=str, location="json")
++        parser.add_argument("paramID", type=str, location="json")
++        parser.add_argument("name", type=str, location="json")
++        parser.add_argument("description", type=str, location="json")
++        parser.add_argument("icon", type=str, location="json")
++        parser.add_argument("icon_background", type=str, location="json")
++        parser.add_argument("category", type=str, choices=ALLOW_CREATE_APP_MODES, location="json")
++        parser.add_argument("has_knowledge_base", type=bool, location="json")
++        args = parser.parse_args()
++        app_service = AppService()
++        app_service.export_to_firestore(args)
++        return 201
++
++
+ class AppListApi(Resource):
+     @setup_required
+     @login_required
+@@ -63,12 +90,39 @@ class AppListApi(Resource):
+         )
+         parser.add_argument("name", type=str, location="args", required=False)
+         parser.add_argument("tag_ids", type=uuid_list, location="args", required=False)
++        parser.add_argument("tag_names", type=str, location="args", required=False)
+         parser.add_argument("is_created_by_me", type=inputs.boolean, location="args", required=False)
+ 
+         args = parser.parse_args()
+ 
+         # get app list
+         app_service = AppService()
++        
++        # Filter by tag names if provided
++        if args.get("tag_names"):
++            tag_names = [name.strip() for name in args["tag_names"].split(",")]
++            tag_ids = []
++            
++            # Get tag IDs for the given tag names
++            for tag_name in tag_names:
++                tags = TagService.get_tag_by_tag_name("app", current_user.current_tenant_id, tag_name)
++                if tags:
++                    tag_ids.extend([tag.id for tag in tags])
++            
++            # If tag IDs were found, add them to args
++            if tag_ids:
++                if args.get("tag_ids"):
++                    # Combine with existing tag_ids if any
++                    existing_ids = args["tag_ids"]
++                    # Deduplicate while preserving order
++                    combined_ids = existing_ids + tag_ids
++                    args["tag_ids"] = list(dict.fromkeys(combined_ids))
++                else:
++                    args["tag_ids"] = tag_ids
++            elif args.get("tag_names") and not args.get("tag_ids"):
++                # If tag names were provided but no matching tags found, return empty result
++                return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
++        
+         app_pagination = app_service.get_paginate_apps(current_user.id, current_user.current_tenant_id, args)
+         if not app_pagination:
+             return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
+@@ -114,6 +168,62 @@ class AppListApi(Resource):
+         return app, 201
+ 
+ 
++# class AppImportApi(Resource):
++#     @setup_required
++#     @login_required
++#     @account_initialization_required
++#     @marshal_with(app_detail_fields_with_site)
++#     @cloud_edition_billing_resource_check("apps")
++#     def post(self):
++#         """Import app"""
++#         # The role of the current user in the ta table must be admin, owner, or editor
++#         if not current_user.is_editor:
++#             raise Forbidden()
++
++#         parser = reqparse.RequestParser()
++#         parser.add_argument("data", type=str, required=True, nullable=False, location="json")
++#         parser.add_argument("name", type=str, location="json")
++#         parser.add_argument("description", type=str, location="json")
++#         parser.add_argument("icon_type", type=str, location="json")
++#         parser.add_argument("icon", type=str, location="json")
++#         parser.add_argument("icon_background", type=str, location="json")
++#         parser.add_argument("asa_company_id", type=str, location="json")
++#         args = parser.parse_args()
++
++#         app = AppDslService.import_and_create_new_app(
++#             tenant_id=current_user.current_tenant_id, data=args["data"], args=args, account=current_user
++#         )
++
++#         return app, 201
++
++
++# class AppImportFromUrlApi(Resource):
++#     @setup_required
++#     @login_required
++#     @account_initialization_required
++#     @marshal_with(app_detail_fields_with_site)
++#     @cloud_edition_billing_resource_check("apps")
++#     def post(self):
++#         """Import app from url"""
++#         # The role of the current user in the ta table must be admin, owner, or editor
++#         if not current_user.is_editor:
++#             raise Forbidden()
++
++#         parser = reqparse.RequestParser()
++#         parser.add_argument("url", type=str, required=True, nullable=False, location="json")
++#         parser.add_argument("name", type=str, location="json")
++#         parser.add_argument("description", type=str, location="json")
++#         parser.add_argument("icon", type=str, location="json")
++#         parser.add_argument("icon_background", type=str, location="json")
++#         args = parser.parse_args()
++
++#         app = AppDslService.import_and_create_new_app_from_url(
++#             tenant_id=current_user.current_tenant_id, url=args["url"], args=args, account=current_user
++#         )
++
++#         return app, 201
++
++
+ class AppApi(Resource):
+     @setup_required
+     @login_required
+@@ -354,6 +464,7 @@ class AppTraceApi(Resource):
+ api.add_resource(AppListApi, "/apps")
+ api.add_resource(AppApi, "/apps/<uuid:app_id>")
+ api.add_resource(AppCopyApi, "/apps/<uuid:app_id>/copy")
++api.add_resource(AppExportFirestoreApi, "/apps/<uuid:app_id>/exportFirestore")
+ api.add_resource(AppExportApi, "/apps/<uuid:app_id>/export")
+ api.add_resource(AppNameApi, "/apps/<uuid:app_id>/name")
+ api.add_resource(AppIconApi, "/apps/<uuid:app_id>/icon")
+diff --git a/api/controllers/console/app/app_import.py b/api/controllers/console/app/app_import.py
+index 9ffb94e9f9..0a1559dc7f 100644
+--- a/api/controllers/console/app/app_import.py
++++ b/api/controllers/console/app/app_import.py
+@@ -42,6 +42,7 @@ class AppImportApi(Resource):
+         parser.add_argument("icon", type=str, location="json")
+         parser.add_argument("icon_background", type=str, location="json")
+         parser.add_argument("app_id", type=str, location="json")
++        parser.add_argument("asa_company_id", type=str, location="json")
+         args = parser.parse_args()
+ 
+         # Create service with session
+@@ -60,6 +61,7 @@ class AppImportApi(Resource):
+                 icon=args.get("icon"),
+                 icon_background=args.get("icon_background"),
+                 app_id=args.get("app_id"),
++                asa_company_id=args.get("asa_company_id"),
+             )
+             session.commit()
+         if result.app_id and FeatureService.get_system_features().webapp_auth.enabled:
+diff --git a/api/controllers/console/app/conversation.py b/api/controllers/console/app/conversation.py
+index 70d6216497..0b2548e138 100644
+--- a/api/controllers/console/app/conversation.py
++++ b/api/controllers/console/app/conversation.py
+@@ -1,3 +1,4 @@
++import decimal
+ from datetime import UTC, datetime
+ 
+ import pytz  # pip install pytz
+@@ -17,6 +18,7 @@ from fields.conversation_fields import (
+     conversation_detail_fields,
+     conversation_message_detail_fields,
+     conversation_pagination_fields,
++    conversation_statistics_fields,
+     conversation_with_summary_pagination_fields,
+ )
+ from libs.helper import DatetimeString
+@@ -24,7 +26,6 @@ from libs.login import login_required
+ from models import Conversation, EndUser, Message, MessageAnnotation
+ from models.model import AppMode
+ 
+-
+ class CompletionConversationApi(Resource):
+     @setup_required
+     @login_required
+@@ -298,10 +299,51 @@ class ChatConversationDetailApi(Resource):
+         return {"result": "success"}, 204
+ 
+ 
++# Custom ASA endpoint
++class ConversationStatisticsApi(Resource):
++    @setup_required
++    @login_required
++    @account_initialization_required
++    @get_app_model(mode=[AppMode.CHAT, AppMode.AGENT_CHAT, AppMode.ADVANCED_CHAT, AppMode.COMPLETION])
++    @marshal_with(conversation_statistics_fields)
++    def get(self, app_model, conversation_id):
++        if not current_user.is_editor:
++            raise Forbidden()
++        conversation_id = str(conversation_id)
++
++        conversation = _get_conversation(app_model, conversation_id)
++
++        # Fetch all messages for the conversation
++        messages = db.session.query(Message).filter(Message.conversation_id == conversation.id).all()
++
++        total_messages = len(messages)
++        total_tokens = 0
++        total_price = decimal.Decimal(0.0)
++        currency = "USD"  # Default currency
++
++        for message in messages:
++            total_tokens += message.message_tokens + message.answer_tokens
++            if message.total_price:
++                total_price += message.total_price
++            if message.currency:
++                currency = message.currency
++
++        return {
++            "total_messages": total_messages,
++            "total_tokens": total_tokens,
++            "total_price": total_price,
++            "currency": currency,
++        }
++
++
+ api.add_resource(CompletionConversationApi, "/apps/<uuid:app_id>/completion-conversations")
+ api.add_resource(CompletionConversationDetailApi, "/apps/<uuid:app_id>/completion-conversations/<uuid:conversation_id>")
+ api.add_resource(ChatConversationApi, "/apps/<uuid:app_id>/chat-conversations")
+ api.add_resource(ChatConversationDetailApi, "/apps/<uuid:app_id>/chat-conversations/<uuid:conversation_id>")
++api.add_resource(
++    ConversationStatisticsApi, "/apps/<uuid:app_id>/conversations/<uuid:conversation_id>/statistics"
++)
++
+ 
+ 
+ def _get_conversation(app_model, conversation_id):
+diff --git a/api/controllers/console/app/workflow_run.py b/api/controllers/console/app/workflow_run.py
+index 9099700213..cf8eba546d 100644
+--- a/api/controllers/console/app/workflow_run.py
++++ b/api/controllers/console/app/workflow_run.py
+@@ -1,3 +1,4 @@
++import decimal
+ from typing import cast
+ 
+ from flask_login import current_user
+@@ -12,6 +13,7 @@ from fields.workflow_run_fields import (
+     workflow_run_detail_fields,
+     workflow_run_node_execution_list_fields,
+     workflow_run_pagination_fields,
++    workflow_run_statistics_fields,
+ )
+ from libs.helper import uuid_value
+ from libs.login import login_required
+@@ -19,6 +21,7 @@ from models import Account, App, AppMode, EndUser
+ from services.workflow_run_service import WorkflowRunService
+ 
+ 
++
+ class AdvancedChatAppWorkflowRunListApi(Resource):
+     @setup_required
+     @login_required
+@@ -101,8 +104,49 @@ class WorkflowRunNodeExecutionListApi(Resource):
+ 
+         return {"data": node_executions}
+ 
++# Custom ASA endpoint
++class WorkflowRunStatisticsApi(Resource):
++    @setup_required
++    @login_required
++    @account_initialization_required
++    @get_app_model(mode=[AppMode.ADVANCED_CHAT, AppMode.WORKFLOW])
++    @marshal_with(workflow_run_statistics_fields)
++    def get(self, app_model: App, run_id):
++        """
++        Get workflow run statistics
++        """
++        run_id = str(run_id)
++
++        workflow_run_service = WorkflowRunService()
++        user = cast("Account | EndUser", current_user)
++        node_executions = workflow_run_service.get_workflow_run_node_executions(
++            app_model=app_model,
++            run_id=run_id,
++            user=user,
++        )
++
++        total_tokens = 0
++        total_price = decimal.Decimal(0.0)
++        currency = "USD"
++
++        for node_execution in node_executions:
++            metadata = node_execution.execution_metadata_dict
++            if metadata and "total_tokens" in metadata:
++                total_tokens += metadata["total_tokens"]
++            if metadata and "total_price" in metadata:
++                total_price += decimal.Decimal(str(metadata["total_price"]))
++            if metadata and "currency" in metadata:
++                currency = metadata["currency"]
++
++        return {
++            "total_tokens": total_tokens,
++            "total_price": float(total_price),
++            "currency": currency,
++        }
++
+ 
+ api.add_resource(AdvancedChatAppWorkflowRunListApi, "/apps/<uuid:app_id>/advanced-chat/workflow-runs")
+ api.add_resource(WorkflowRunListApi, "/apps/<uuid:app_id>/workflow-runs")
+ api.add_resource(WorkflowRunDetailApi, "/apps/<uuid:app_id>/workflow-runs/<uuid:run_id>")
+ api.add_resource(WorkflowRunNodeExecutionListApi, "/apps/<uuid:app_id>/workflow-runs/<uuid:run_id>/node-executions")
++api.add_resource(WorkflowRunStatisticsApi, "/apps/<uuid:app_id>/workflow-runs/<uuid:run_id>/statistics")
+diff --git a/api/controllers/console/auth/login.py b/api/controllers/console/auth/login.py
+index 5f2a24322d..a877ba0973 100644
+--- a/api/controllers/console/auth/login.py
++++ b/api/controllers/console/auth/login.py
+@@ -26,6 +26,7 @@ from controllers.console.error import (
+ from controllers.console.wraps import email_password_login_enabled, setup_required
+ from events.tenant_event import tenant_was_created
+ from libs.helper import email, extract_remote_ip
++from libs.passport import PassportService
+ from libs.password import valid_password
+ from models.account import Account
+ from services.account_service import AccountService, RegisterService, TenantService
+@@ -34,6 +35,8 @@ from services.errors.account import AccountRegisterError
+ from services.errors.workspace import WorkSpaceNotAllowedCreateError, WorkspacesLimitExceededError
+ from services.feature_service import FeatureService
+ 
++ASA_ACCOUNT_EMAIL = 'webmasters@asa.team'
++
+ 
+ class LoginApi(Resource):
+     """Resource for user login."""
+@@ -102,6 +105,39 @@ class LoginApi(Resource):
+         token_pair = AccountService.login(account=account, ip_address=extract_remote_ip(request))
+         AccountService.reset_login_error_rate_limit(args["email"])
+         return {"result": "success", "data": token_pair.model_dump()}
++    
++
++class SharedAccountLoginApi(Resource):
++    """Resource for shared account login with external user tracking."""
++
++    @staticmethod
++    def post():
++        token = request.headers.get("Authorization")
++        print('token', token)
++        if not token:
++            return {"result": "fail", "data": "Authorization token is missing"}, 401
++        
++        payload = PassportService().verify(token)
++        user_email = payload.get("email")
++        asa_uid = payload.get("asa_uid")
++        print('decoded token', payload)
++        if not user_email or not asa_uid:
++            return {"result": "fail", "data": "Email or external user ID not provided in token"}, 400
++
++        # Ensure only one main account is used
++        account = AccountService.get_user_through_email(ASA_ACCOUNT_EMAIL)
++        if not account:
++            account = AccountService.create_account(
++                email=ASA_ACCOUNT_EMAIL,
++                name=user_email,
++                interface_language="en-US"
++            )
++
++        # Include `asa_uid` in the login metadata for tracking
++        token_pair = AccountService.login(account=account)
++        print('token_pair', token_pair)
++        AccountService.reset_login_error_rate_limit(user_email)
++        return {"result": "success", "data": token_pair.model_dump()}
+ 
+ 
+ class LogoutApi(Resource):
+@@ -245,6 +281,7 @@ class RefreshTokenApi(Resource):
+ 
+ 
+ api.add_resource(LoginApi, "/login")
++api.add_resource(SharedAccountLoginApi, "/external-login")
+ api.add_resource(LogoutApi, "/logout")
+ api.add_resource(EmailCodeLoginSendEmailApi, "/email-code-login")
+ api.add_resource(EmailCodeLoginApi, "/email-code-login/validity")
+diff --git a/api/controllers/console/datasets/datasets.py b/api/controllers/console/datasets/datasets.py
+index 1611214cb3..4d53daf641 100644
+--- a/api/controllers/console/datasets/datasets.py
++++ b/api/controllers/console/datasets/datasets.py
+@@ -31,6 +31,7 @@ from fields.document_fields import document_status_fields
+ from libs.login import login_required
+ from models import ApiToken, Dataset, Document, DocumentSegment, UploadFile
+ from models.dataset import DatasetPermissionEnum
++from services.app_dsl_service import AppDslService
+ from services.dataset_service import DatasetPermissionService, DatasetService, DocumentService
+ 
+ 
+@@ -146,6 +147,24 @@ class DatasetListApi(Resource):
+             nullable=True,
+             required=False,
+         )
++        parser.add_argument(
++            "asa_company_id",
++            type=str,
++            nullable=True,
++            required=False,
++        )
++        parser.add_argument(
++            "asa_uid",
++            type=str,
++            nullable=True,
++            required=False,
++        )
++        parser.add_argument(
++            "access_scope",
++            type=str,
++            nullable=True,
++            required=False,
++        )
+         args = parser.parse_args()
+ 
+         # The role of the current user in the ta table must be admin, owner, or editor, or dataset_operator
+@@ -163,6 +182,9 @@ class DatasetListApi(Resource):
+                 provider=args["provider"],
+                 external_knowledge_api_id=args["external_knowledge_api_id"],
+                 external_knowledge_id=args["external_knowledge_id"],
++                asa_company_id=args["asa_company_id"],
++                asa_uid=args["asa_uid"],
++                access_scope=args["access_scope"]
+             )
+         except services.errors.dataset.DatasetNameDuplicateError:
+             raise DatasetNameDuplicateError()
+@@ -793,6 +815,44 @@ class DatasetAutoDisableLogApi(Resource):
+             raise NotFound("Dataset not found.")
+         return DatasetService.get_dataset_auto_disable_logs(dataset_id_str), 200
+ 
++class DatasetEncryptionApi(Resource):
++    @setup_required
++    @login_required
++    @account_initialization_required
++    def post(self):
++        """
++        Encrypt a dataset ID (Custom asa endpoint)
++        """
++        # The role of the current user in the ta table must be admin, owner, or editor
++        if not current_user.is_editor:
++            raise Forbidden()
++            
++        parser = reqparse.RequestParser()
++        parser.add_argument('dataset_id', type=str, required=True, location='json')
++        args = parser.parse_args()
++        
++        dataset_id = args['dataset_id']
++        
++        # Validate that the dataset exists and the user has access to it
++        dataset = DatasetService.get_dataset(dataset_id)
++        if dataset is None:
++            raise NotFound("Dataset not found.")
++        
++        try:
++            DatasetService.check_dataset_permission(dataset, current_user)
++        except services.errors.account.NoPermissionError as e:
++            raise Forbidden(str(e))
++        
++        # Encrypt the dataset ID
++        encrypted_id = AppDslService.encrypt_dataset_id(
++            dataset_id=dataset_id,
++            tenant_id=current_user.current_tenant_id
++        )
++        
++        return {
++            'encrypted_id': encrypted_id
++        }, 200
++
+ 
+ api.add_resource(DatasetListApi, "/datasets")
+ api.add_resource(DatasetApi, "/datasets/<uuid:dataset_id>")
+@@ -809,3 +869,4 @@ api.add_resource(DatasetRetrievalSettingApi, "/datasets/retrieval-setting")
+ api.add_resource(DatasetRetrievalSettingMockApi, "/datasets/retrieval-setting/<string:vector_type>")
+ api.add_resource(DatasetPermissionUserListApi, "/datasets/<uuid:dataset_id>/permission-part-users")
+ api.add_resource(DatasetAutoDisableLogApi, "/datasets/<uuid:dataset_id>/auto-disable-logs")
++api.add_resource(DatasetEncryptionApi, "/datasets/encrypt")
+diff --git a/api/controllers/console/explore/installed_app.py b/api/controllers/console/explore/installed_app.py
+index 9d0c08564e..790d27627d 100644
+--- a/api/controllers/console/explore/installed_app.py
++++ b/api/controllers/console/explore/installed_app.py
+@@ -19,6 +19,7 @@ from services.account_service import TenantService
+ from services.app_service import AppService
+ from services.enterprise.enterprise_service import EnterpriseService
+ from services.feature_service import FeatureService
++from services.tag_service import TagService
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -29,6 +30,7 @@ class InstalledAppsListApi(Resource):
+     @marshal_with(installed_app_list_fields)
+     def get(self):
+         app_id = request.args.get("app_id", default=None, type=str)
++        tag_names = request.args.get("tag_names", default=None, type=str)
+         current_tenant_id = current_user.current_tenant_id
+ 
+         if app_id:
+@@ -55,6 +57,31 @@ class InstalledAppsListApi(Resource):
+             if installed_app.app is not None
+         ]
+ 
++        # Filter by tag names if provided
++        if tag_names:
++            tag_name_list = [name.strip() for name in tag_names.split(",")]
++            tag_ids = []
++            
++            # Get tag IDs for the given tag names
++            for tag_name in tag_name_list:
++                tags = TagService.get_tag_by_tag_name("app", current_user.current_tenant_id, tag_name)
++                if tags:
++                    tag_ids.extend([tag.id for tag in tags])
++            
++            # Filter installed apps by tag IDs
++            if tag_ids:
++                filtered_apps = []
++                for installed_app in installed_app_list:
++                    app_tags = installed_app["app"].tags
++                    app_tag_ids = [tag.id for tag in app_tags]
++                    # If any of the app's tags match the requested tags, include it
++                    if any(tag_id in tag_ids for tag_id in app_tag_ids):
++                        filtered_apps.append(installed_app)
++                installed_app_list = filtered_apps
++            else:
++                # If tag names were provided but no matching tags found, return empty result
++                return {"installed_apps": []}
++
+         # filter out apps that user doesn't have access to
+         if FeatureService.get_system_features().webapp_auth.enabled:
+             user_id = current_user.id
+diff --git a/api/controllers/service_api/dataset/dataset.py b/api/controllers/service_api/dataset/dataset.py
+index a499719fc3..d26e29c386 100644
+--- a/api/controllers/service_api/dataset/dataset.py
++++ b/api/controllers/service_api/dataset/dataset.py
+@@ -128,6 +128,24 @@ class DatasetListApi(DatasetApiResource):
+             nullable=True,
+             required=False,
+         )
++        parser.add_argument(
++            "asa_company_id",
++            type=str,
++            nullable=True,
++            required=False,
++        )
++        parser.add_argument(
++            "asa_uid",
++            type=str,
++            nullable=True,
++            required=False,
++        )
++        parser.add_argument(
++            "access_scope",
++            type=str,
++            nullable=True,
++            required=False,
++        )
+         parser.add_argument("retrieval_model", type=dict, required=False, nullable=True, location="json")
+         parser.add_argument("embedding_model", type=str, required=False, nullable=True, location="json")
+         parser.add_argument("embedding_model_provider", type=str, required=False, nullable=True, location="json")
+@@ -160,6 +178,9 @@ class DatasetListApi(DatasetApiResource):
+                 provider=args["provider"],
+                 external_knowledge_api_id=args["external_knowledge_api_id"],
+                 external_knowledge_id=args["external_knowledge_id"],
++                asa_company_id=args["asa_company_id"],
++                asa_uid=args["asa_uid"],
++                access_scope=args["access_scope"],
+                 embedding_model_provider=args["embedding_model_provider"],
+                 embedding_model_name=args["embedding_model"],
+                 retrieval_model=RetrievalModel(**args["retrieval_model"])

@@ -1,0 +1,96 @@
+diff --git a/api/fields/app_fields.py b/api/fields/app_fields.py
+index 73c224542a..955c086d3d 100644
+--- a/api/fields/app_fields.py
++++ b/api/fields/app_fields.py
+@@ -112,6 +112,7 @@ app_partial_fields = {
+     "updated_by": fields.String,
+     "updated_at": TimestampField,
+     "tags": fields.List(fields.Nested(tag_fields)),
++    "asa_company_id": fields.String,
+     "access_mode": fields.String,
+     "create_user_name": fields.String,
+     "author_name": fields.String,
+@@ -193,6 +194,7 @@ app_detail_fields_with_site = {
+     "updated_by": fields.String,
+     "updated_at": TimestampField,
+     "deleted_tools": fields.List(fields.Nested(deleted_tool_fields)),
++    'asa_company_id': fields.String,
+     "access_mode": fields.String,
+ }
+ 
+diff --git a/api/fields/conversation_fields.py b/api/fields/conversation_fields.py
+index 370e8a5a58..deeec80599 100644
+--- a/api/fields/conversation_fields.py
++++ b/api/fields/conversation_fields.py
+@@ -68,6 +68,8 @@ message_detail_fields = {
+     "message_tokens": fields.Integer,
+     "answer": fields.String(attribute="re_sign_file_url_answer"),
+     "answer_tokens": fields.Integer,
++    "total_price": fields.Float,
++    "currency": fields.String,
+     "provider_response_latency": fields.Float,
+     "from_source": fields.String,
+     "from_end_user_id": fields.String,
+@@ -209,3 +211,11 @@ conversation_infinite_scroll_pagination_fields = {
+     "has_more": fields.Boolean,
+     "data": fields.List(fields.Nested(simple_conversation_fields)),
+ }
++
++conversation_statistics_fields = {
++    "total_messages": fields.Integer,
++    "total_tokens": fields.Integer,
++    "total_price": fields.Float,
++    "currency": fields.String,
++}
++
+diff --git a/api/fields/dataset_fields.py b/api/fields/dataset_fields.py
+index 32a88cc5db..fa1cd9ae96 100644
+--- a/api/fields/dataset_fields.py
++++ b/api/fields/dataset_fields.py
+@@ -81,6 +81,9 @@ dataset_detail_fields = {
+     "external_retrieval_model": fields.Nested(external_retrieval_model_fields, allow_null=True),
+     "doc_metadata": fields.List(fields.Nested(doc_metadata_fields)),
+     "built_in_field_enabled": fields.Boolean,
++    "asa_company_id": fields.String,
++    "asa_uid": fields.String,
++    "access_scope": fields.String,
+ }
+ 
+ dataset_query_detail_fields = {
+diff --git a/api/fields/installed_app_fields.py b/api/fields/installed_app_fields.py
+index e0b3e340f6..ac280198db 100644
+--- a/api/fields/installed_app_fields.py
++++ b/api/fields/installed_app_fields.py
+@@ -2,6 +2,8 @@ from flask_restful import fields
+ 
+ from libs.helper import AppIconUrlField, TimestampField
+ 
++tag_fields = {"id": fields.String, "name": fields.String, "type": fields.String}
++
+ app_fields = {
+     "id": fields.String,
+     "name": fields.String,
+@@ -11,6 +13,8 @@ app_fields = {
+     "icon_background": fields.String,
+     "icon_url": AppIconUrlField,
+     "use_icon_as_answer_icon": fields.Boolean,
++    "tags": fields.List(fields.Nested(tag_fields)),
++    "description": fields.String,
+ }
+ 
+ installed_app_fields = {
+diff --git a/api/fields/workflow_run_fields.py b/api/fields/workflow_run_fields.py
+index a106728e9c..b28db9c82c 100644
+--- a/api/fields/workflow_run_fields.py
++++ b/api/fields/workflow_run_fields.py
+@@ -116,3 +116,10 @@ workflow_run_node_execution_fields = {
+ workflow_run_node_execution_list_fields = {
+     "data": fields.List(fields.Nested(workflow_run_node_execution_fields)),
+ }
++
++workflow_run_statistics_fields = {
++    "total_tokens": fields.Integer,
++    "total_price": fields.Float,
++    "currency": fields.String,
++}
++

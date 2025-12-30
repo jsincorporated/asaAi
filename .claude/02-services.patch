@@ -1,0 +1,202 @@
+diff --git a/api/services/app_dsl_service.py b/api/services/app_dsl_service.py
+index 20257fa345..a4fbbecb84 100644
+--- a/api/services/app_dsl_service.py
++++ b/api/services/app_dsl_service.py
+@@ -127,6 +127,7 @@ class AppDslService:
+         icon: Optional[str] = None,
+         icon_background: Optional[str] = None,
+         app_id: Optional[str] = None,
++        asa_company_id: Optional[str] = None,
+     ) -> Import:
+         """Import an app from YAML content or URL."""
+         import_id = str(uuid.uuid4())
+@@ -290,6 +291,7 @@ class AppDslService:
+                 icon_type=icon_type,
+                 icon=icon,
+                 icon_background=icon_background,
++                asa_company_id=asa_company_id,
+                 dependencies=check_dependencies_pending_data,
+             )
+ 
+@@ -413,6 +415,7 @@ class AppDslService:
+         icon_type: Optional[str] = None,
+         icon: Optional[str] = None,
+         icon_background: Optional[str] = None,
++        asa_company_id: Optional[str] = None,
+         dependencies: Optional[list[PluginDependency]] = None,
+     ) -> App:
+         """Create a new app or update an existing one."""
+@@ -438,6 +441,7 @@ class AppDslService:
+             app.icon = icon
+             app.icon_background = icon_background or app_data.get("icon_background", app.icon_background)
+             app.updated_by = account.id
++            app.asa_company_id = asa_company_id
+         else:
+             if account.current_tenant_id is None:
+                 raise ValueError("Current tenant is not set")
+@@ -457,6 +461,7 @@ class AppDslService:
+             app.use_icon_as_answer_icon = app_data.get("use_icon_as_answer_icon", False)
+             app.created_by = account.id
+             app.updated_by = account.id
++            app.asa_company_id = asa_company_id
+ 
+             self._session.add(app)
+             self._session.commit()
+@@ -553,6 +558,10 @@ class AppDslService:
+             },
+         }
+ 
++        # Add asa_company_id to the root level if it is not None
++        if app_model.asa_company_id:
++            export_data["asa_company_id"] = app_model.asa_company_id
++
+         if app_mode in {AppMode.ADVANCED_CHAT, AppMode.WORKFLOW}:
+             cls._append_workflow_export_data(
+                 export_data=export_data, app_model=app_model, include_secret=include_secret
+diff --git a/api/services/app_service.py b/api/services/app_service.py
+index d08462d001..e1a0fd5491 100644
+--- a/api/services/app_service.py
++++ b/api/services/app_service.py
+@@ -1,10 +1,14 @@
+ import json
+ import logging
++import os
+ from datetime import UTC, datetime
+ from typing import Optional, cast
+ 
++import firebase_admin
++from firebase_admin import credentials
+ from flask_login import current_user
+ from flask_sqlalchemy.pagination import Pagination
++from google.cloud import firestore
+ 
+ from configs import dify_config
+ from constants.model_template import default_app_templates
+@@ -383,6 +387,66 @@ class AppService:
+                         meta["tool_icons"][tool_name] = {"background": "#252525", "content": "\ud83d\ude01"}
+ 
+         return meta
++    # ASA WIP still need to enable production credentials i think
++    def initialize_firestore_client():
++        """
++        Initialize Firestore client with emulator support or production credentials.
++        """
++        # Check if Firebase has already been initialized
++        try:
++            app = firebase_admin.get_app()
++            print("Firebase already initialized.")
++            return app
++        except ValueError:
++            # No app initialized yet; proceed with initialization.
++            pass
++        use_emulator = True
++        print(f'Are we using emulator? -> {use_emulator}')
++
++        if use_emulator:
++            host = 'localhost'
++            os.environ['FIREBASE_AUTH_EMULATOR_HOST'] = f'{host}:9099'
++            os.environ['FIRESTORE_EMULATOR_HOST'] = f'{host}:8081'
++            os.environ['FIREBASE_DATABASE_EMULATOR_HOST'] = f'{host}:9000'
++            os.environ['STORAGE_EMULATOR_HOST'] = f'http://{host}:9198'
++            os.environ['GOOGLE_CLOUD_PROJECT'] = 'asa-team'
++
++            # Initialize without credentials for emulator
++            firebase_admin.initialize_app(options={"projectId": "asa-team"})
++            print("Firebase initialized successfully for emulator!")
++        else:
++            from firebase_admin import credentials
++            service_account_path = './token-firebase-admin.json'
++            cred = credentials.Certificate(service_account_path)
++            firebase_admin.initialize_app(credential=cred)
++            print("Firebase initialized successfully for production!")
++
++    def export_to_firestore(self, args):
++        """
++        Export app data to Firestore.
++        :param args: Dictionary of app details to store in Firestore.
++        """
++        AppService.initialize_firestore_client()
++
++        app_id = args.get("appID")
++        if not app_id:
++            raise ValueError("appID is required for Firestore export.")
++
++        client = firestore.Client()
++
++        app_data = {
++            "name": args.get("name"),
++            "description": args.get("description"),
++            "icon": args.get("icon"),
++            "icon_background": args.get("icon_background"),
++            "app_id": app_id,
++            "parameter_id": args.get("paramID"),
++            "category": args.get("category"),
++            "has_knowledge": args.get("has_knowledge_base")
++        }
++
++        doc_ref = client.collection("workflows").document(app_id)
++        doc_ref.set(app_data)
+ 
+     @staticmethod
+     def get_app_code_by_id(app_id: str) -> str:
+diff --git a/api/services/dataset_service.py b/api/services/dataset_service.py
+index e42b5ace75..3d3c4c96dd 100644
+--- a/api/services/dataset_service.py
++++ b/api/services/dataset_service.py
+@@ -174,13 +174,16 @@ class DatasetService:
+         provider: str = "vendor",
+         external_knowledge_api_id: Optional[str] = None,
+         external_knowledge_id: Optional[str] = None,
++        asa_company_id: Optional[str] = None,
++        asa_uid: Optional[str] = None,
++        access_scope: Optional[str] = None,
+         embedding_model_provider: Optional[str] = None,
+         embedding_model_name: Optional[str] = None,
+         retrieval_model: Optional[RetrievalModel] = None,
+     ):
+         # check if dataset name already exists
+-        if db.session.query(Dataset).filter_by(name=name, tenant_id=tenant_id).first():
+-            raise DatasetNameDuplicateError(f"Dataset with name {name} already exists.")
++        # if db.session.query(Dataset).filter_by(name=name, tenant_id=tenant_id).first():
++        #     raise DatasetNameDuplicateError(f"Dataset with name {name} already exists.")
+         embedding_model = None
+         if indexing_technique == "high_quality":
+             model_manager = ModelManager()
+@@ -219,6 +222,9 @@ class DatasetService:
+         dataset.retrieval_model = retrieval_model.model_dump() if retrieval_model else None
+         dataset.permission = permission or DatasetPermissionEnum.ONLY_ME
+         dataset.provider = provider
++        dataset.asa_company_id = asa_company_id
++        dataset.asa_uid = asa_uid
++        dataset.access_scope = access_scope
+         db.session.add(dataset)
+         db.session.flush()
+ 
+diff --git a/api/services/workflow_service.py b/api/services/workflow_service.py
+index 2be57fd51c..9552a3a488 100644
+--- a/api/services/workflow_service.py
++++ b/api/services/workflow_service.py
+@@ -212,6 +212,7 @@ class WorkflowService:
+                 created_by=account.id,
+                 environment_variables=environment_variables,
+                 conversation_variables=conversation_variables,
++                asa_company_id=app_model.asa_company_id
+             )
+             db.session.add(workflow)
+         # update draft workflow if found
+@@ -222,6 +223,7 @@ class WorkflowService:
+             workflow.updated_at = datetime.now(UTC).replace(tzinfo=None)
+             workflow.environment_variables = environment_variables
+             workflow.conversation_variables = conversation_variables
++            workflow.asa_company_id = app_model.asa_company_id
+ 
+         # commit db session changes
+         db.session.commit()
+@@ -255,6 +257,7 @@ class WorkflowService:
+             tenant_id=app_model.tenant_id,
+             app_id=app_model.id,
+             type=draft_workflow.type,
++            asa_company_id=app_model.asa_company_id,
+             version=Workflow.version_from_datetime(datetime.now(UTC).replace(tzinfo=None)),
+             graph=draft_workflow.graph,
+             features=draft_workflow.features,

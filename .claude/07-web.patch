@@ -1,0 +1,404 @@
+diff --git a/web/app/(commonLayout)/apps/AppCard.tsx b/web/app/(commonLayout)/apps/AppCard.tsx
+index f50cc10520..49a20b0c04 100644
+--- a/web/app/(commonLayout)/apps/AppCard.tsx
++++ b/web/app/(commonLayout)/apps/AppCard.tsx
+@@ -9,7 +9,7 @@ import cn from '@/utils/classnames'
+ import type { App } from '@/types/app'
+ import Confirm from '@/app/components/base/confirm'
+ import Toast, { ToastContext } from '@/app/components/base/toast'
+-import { copyApp, deleteApp, exportAppConfig, updateAppInfo } from '@/service/apps'
++import { copyApp, deleteApp, exportAppConfig, exportToFirestore, updateAppInfo } from '@/service/apps'
+ import DuplicateAppModal from '@/app/components/app/duplicate-modal'
+ import type { DuplicateAppModalProps } from '@/app/components/app/duplicate-modal'
+ import AppIcon from '@/app/components/base/app-icon'
+@@ -39,8 +39,8 @@ import { formatTime } from '@/utils/time'
+ import { useGetUserCanAccessApp } from '@/service/access-control'
+ 
+ export type AppCardProps = {
+-  app: App
+-  onRefresh?: () => void
++  app: App;
++  onRefresh?: () => void;
+ }
+ 
+ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+@@ -50,6 +50,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+   const { isCurrentWorkspaceEditor } = useAppContext()
+   const { onPlanInfoChanged } = useProviderContext()
+   const { push } = useRouter()
++  const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] = useState(false)
++  const [hasKnowledgeBase, setHasKnowledgeBase] = useState(false)
+ 
+   const mutateApps = useContextSelector(
+     AppsContext,
+@@ -67,15 +69,16 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+     try {
+       await deleteApp(app.id)
+       notify({ type: 'success', message: t('app.appDeleted') })
+-      if (onRefresh)
+-        onRefresh()
++      if (onRefresh) onRefresh()
+       mutateApps()
+       onPlanInfoChanged()
+     }
+-    catch (e: any) {
++ catch (e: any) {
+       notify({
+         type: 'error',
+-        message: `${t('app.appDeleteFailed')}${'message' in e ? `: ${e.message}` : ''}`,
++        message: `${t('app.appDeleteFailed')}${
++          'message' in e ? `: ${e.message}` : ''
++        }`,
+       })
+     }
+     setShowConfirmDelete(false)
+@@ -129,13 +132,12 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+         message: t('app.newApp.appCreated'),
+       })
+       localStorage.setItem(NEED_REFRESH_APP_LIST_KEY, '1')
+-      if (onRefresh)
+-        onRefresh()
++      if (onRefresh) onRefresh()
+       mutateApps()
+       onPlanInfoChanged()
+       getRedirection(isCurrentWorkspaceEditor, newApp, push)
+     }
+-    catch {
++ catch (e) {
+       notify({ type: 'error', message: t('app.newApp.appCreateFailed') })
+     }
+   }
+@@ -152,7 +154,7 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+       a.download = `${app.name}.yml`
+       a.click()
+     }
+-    catch {
++ catch (e) {
+       notify({ type: 'error', message: t('app.exportFailed') })
+     }
+   }
+@@ -163,26 +165,52 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+       return
+     }
+     try {
+-      const workflowDraft = await fetchWorkflowDraft(`/apps/${app.id}/workflows/draft`)
+-      const list = (workflowDraft.environment_variables || []).filter(env => env.value_type === 'secret')
++      const workflowDraft = await fetchWorkflowDraft(
++        `/apps/${app.id}/workflows/draft`,
++      )
++      const list = (workflowDraft.environment_variables || []).filter(
++        env => env.value_type === 'secret',
++      )
+       if (list.length === 0) {
+         onExport()
+         return
+       }
+       setSecretEnvList(list)
+     }
+-    catch {
++ catch (e) {
+       notify({ type: 'error', message: t('app.exportFailed') })
+     }
+   }
+ 
+   const onSwitch = () => {
+-    if (onRefresh)
+-      onRefresh()
++    if (onRefresh) onRefresh()
+     mutateApps()
+     setShowSwitchModal(false)
+   }
+ 
++  const handleFirestoreExport = async () => {
++    try {
++      await exportToFirestore({
++        appID: app.id,
++        paramID: app.param_id,
++        name: app.name,
++        icon: app.icon,
++        icon_background: app.icon_background,
++        description: app.description,
++        category: app.mode,
++        has_knowledge_base: hasKnowledgeBase,
++      })
++      setShowFirestoreExportConfirm(false)
++      notify({
++        type: 'success',
++        message: 'Successfully exported to firestore',
++      })
++    }
++ catch (e) {
++      notify({ type: 'error', message: t('app.newApp.appCreateFailed') })
++    }
++  }
++
+   const onUpdateAccessControl = useCallback(() => {
+     if (onRefresh)
+       onRefresh()
+@@ -207,6 +235,14 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+       e.preventDefault()
+       setShowDuplicateModal(true)
+     }
++    const onClickFirestoreExport = async (
++      e: React.MouseEvent<HTMLButtonElement>,
++    ) => {
++      e.stopPropagation()
++      props.onClick?.()
++      e.preventDefault()
++      setShowFirestoreExportConfirm(true)
++    }
+     const onClickExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
+       e.stopPropagation()
+       props.onClick?.()
+@@ -251,6 +287,9 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+         <button className='mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickSettings}>
+           <span className='system-sm-regular text-text-secondary'>{t('app.editApp')}</span>
+         </button>
++        <button className='mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickFirestoreExport}>
++          <span className='system-sm-regular text-text-secondary'>Firestore</span>
++        </button>
+         <Divider className="my-1" />
+         <button className='mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover' onClick={onClickDuplicate}>
+           <span className='system-sm-regular text-text-secondary'>{t('app.duplicate')}</span>
+@@ -359,7 +398,10 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+         </div>
+         <div className='title-wrapper h-[90px] px-[14px] text-xs leading-normal text-text-tertiary'>
+           <div
+-            className={cn(tags.length ? 'line-clamp-2' : 'line-clamp-4', 'group-hover:line-clamp-2')}
++            className={cn(
++              tags.length ? 'line-clamp-2' : 'line-clamp-4',
++              'group-hover:line-clamp-2',
++            )}
+             title={app.description}
+           >
+             {app.description}
+@@ -380,8 +422,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+                   tags.length ? '!block' : '!hidden',
+                 )}>
+                   <TagSelector
+-                    position='bl'
+-                    type='app'
++                    position="bl"
++                    type="app"
+                     targetID={app.id}
+                     value={tags.map(tag => tag.id)}
+                     selectedTags={tags}
+@@ -466,6 +508,29 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
+           onCancel={() => setShowConfirmDelete(false)}
+         />
+       )}
++      {showFirestoreExportConfirm && (
++        <Confirm
++          title="Export to Firestore"
++          content={
++            <>
++              <p>Are you sure you want to export this app to Firestore?</p>
++              <div className="mt-2">
++                <label>
++                  <input
++                    type="checkbox"
++                    checked={hasKnowledgeBase}
++                    onChange={e => setHasKnowledgeBase(e.target.checked)}
++                  />{' '}
++                  Has Knowledge Base
++                </label>
++              </div>
++            </>
++          }
++          isShow={showFirestoreExportConfirm}
++          onConfirm={handleFirestoreExport}
++          onCancel={() => setShowFirestoreExportConfirm(false)}
++        />
++      )}
+       {secretEnvList.length > 0 && (
+         <DSLExportConfirmModal
+           envList={secretEnvList}
+diff --git a/web/app/(commonLayout)/apps/Apps.tsx b/web/app/(commonLayout)/apps/Apps.tsx
+index 2aa192fb02..cfc5bd9ec4 100644
+--- a/web/app/(commonLayout)/apps/Apps.tsx
++++ b/web/app/(commonLayout)/apps/Apps.tsx
+@@ -44,13 +44,10 @@ const getKey = (
+   if (!pageIndex || previousPageData.has_more) {
+     const params: any = { url: 'apps', params: { page: pageIndex + 1, limit: 30, name: keywords, is_created_by_me: isCreatedByMe } }
+ 
+-    if (activeTab !== 'all')
+-      params.params.mode = activeTab
+-    else
+-      delete params.params.mode
++    if (activeTab !== 'all') params.params.mode = activeTab
++    else delete params.params.mode
+ 
+-    if (tags.length)
+-      params.params.tag_ids = tags
++    if (tags.length) params.params.tag_ids = tags
+ 
+     return params
+   }
+@@ -60,7 +57,8 @@ const getKey = (
+ const Apps = () => {
+   const { t } = useTranslation()
+   const router = useRouter()
+-  const { isCurrentWorkspaceEditor, isCurrentWorkspaceDatasetOperator } = useAppContext()
++  const { isCurrentWorkspaceEditor, isCurrentWorkspaceDatasetOperator }
++    = useAppContext()
+   const showTagManagementModal = useTagStore(s => s.showTagManagementModal)
+   const [activeTab, setActiveTab] = useTabSearchParams({
+     defaultTab: 'all',
+@@ -102,6 +100,22 @@ const Apps = () => {
+     },
+   )
+ 
++  // const transformedData = data?.map((page) => ({
++  //   ...page,
++  //   data: page.data.map((app) => {
++  //     const installedApp = installedApps.find(
++  //       (installedApp) => installedApp.app.id === app.id
++  //     );
++
++  //     return installedApp
++  //       ? {
++  //           ...app,
++  //           param_id: installedApp.id,
++  //         }
++  //       : app;
++  //   }),
++  // }));
++
+   const anchorRef = useRef<HTMLDivElement>(null)
+   const options = [
+     { value: 'all', text: t('app.types.all'), icon: <RiApps2Line className='mr-1 h-[14px] w-[14px]' /> },
+@@ -120,8 +134,7 @@ const Apps = () => {
+   }, [mutate, t])
+ 
+   useEffect(() => {
+-    if (isCurrentWorkspaceDatasetOperator)
+-      return router.replace('/datasets')
++    if (isCurrentWorkspaceDatasetOperator) return router.replace('/datasets')
+   }, [router, isCurrentWorkspaceDatasetOperator])
+ 
+   useEffect(() => {
+@@ -144,17 +157,23 @@ const Apps = () => {
+     return () => observer?.disconnect()
+   }, [isLoading, setSize, anchorRef, mutate, data, error])
+ 
+-  const { run: handleSearch } = useDebounceFn(() => {
+-    setSearchKeywords(keywords)
+-  }, { wait: 500 })
++  const { run: handleSearch } = useDebounceFn(
++    () => {
++      setSearchKeywords(keywords)
++    },
++    { wait: 500 },
++  )
+   const handleKeywordsChange = (value: string) => {
+     setKeywords(value)
+     handleSearch()
+   }
+ 
+-  const { run: handleTagsUpdate } = useDebounceFn(() => {
+-    setTagIDs(tagFilterValue)
+-  }, { wait: 500 })
++  const { run: handleTagsUpdate } = useDebounceFn(
++    () => {
++      setTagIDs(tagFilterValue)
++    },
++    { wait: 500 },
++  )
+   const handleTagsChange = (value: string[]) => {
+     setTagFilterValue(value)
+     handleTagsUpdate()
+diff --git a/web/app/components/base/chat/chat/question.tsx b/web/app/components/base/chat/chat/question.tsx
+index d221587940..91d1a21266 100644
+--- a/web/app/components/base/chat/chat/question.tsx
++++ b/web/app/components/base/chat/chat/question.tsx
+@@ -98,7 +98,7 @@ const Question: FC<QuestionProps> = ({
+ 
+   return (
+     <div className='mb-2 flex justify-end last:mb-0'>
+-      <div className={cn('group relative mr-4 flex max-w-full items-start pl-14 overflow-x-hidden', isEditing && 'flex-1')}>
++      <div className={cn('group relative mr-4 flex max-w-full items-start overflow-x-hidden pl-14', isEditing && 'flex-1')}>
+         <div className={cn('mr-2 gap-1', isEditing ? 'hidden' : 'flex')}>
+           <div
+             className="absolute hidden gap-0.5 rounded-[10px] border-[0.5px] border-components-actionbar-border bg-components-actionbar-bg p-0.5 shadow-md backdrop-blur-sm group-hover:flex"
+diff --git a/web/app/components/base/icons/assets/public/common/lock.svg b/web/app/components/base/icons/assets/public/common/lock.svg
+index a6987846f7..5e750ce807 100644
+--- a/web/app/components/base/icons/assets/public/common/lock.svg
++++ b/web/app/components/base/icons/assets/public/common/lock.svg
+@@ -1,5 +1,5 @@
+ <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+ <g id="lock">
+-<path id="Vector" fill-rule="evenodd" clip-rule="evenodd" d="M8 1.75C6.27411 1.75 4.875 3.14911 4.875 4.875V6.125C3.83947 6.125 3 6.96444 3 8V12.375C3 13.4106 3.83947 14.25 4.875 14.25H11.125C12.1606 14.25 13 13.4106 13 12.375V8C13 6.96444 12.1606 6.125 11.125 6.125V4.875C11.125 3.14911 9.72587 1.75 8 1.75ZM9.875 6.125V4.875C9.875 3.83947 9.03556 3 8 3C6.96444 3 6.125 3.83947 6.125 4.875V6.125H9.875ZM8 8.625C8.34519 8.625 8.625 8.90481 8.625 9.25V11.125C8.625 11.4702 8.34519 11.75 8 11.75C7.65481 11.75 7.375 11.4702 7.375 11.125V9.25C7.375 8.90481 7.65481 8.625 8 8.625Z" fill="#155AEF"/>
++<path id="Vector" fill-rule="evenodd" clip-rule="evenodd" d="M8 1.75C6.27411 1.75 4.875 3.14911 4.875 4.875V6.125C3.83947 6.125 3 6.96444 3 8V12.375C3 13.4106 3.83947 14.25 4.875 14.25H11.125C12.1606 14.25 13 13.4106 13 12.375V8C13 6.96444 12.1606 6.125 11.125 6.125V4.875C11.125 3.14911 9.72587 1.75 8 1.75ZM9.875 6.125V4.875C9.875 3.83947 9.03556 3 8 3C6.96444 3 6.125 3.83947 6.125 4.875V6.125H9.875ZM8 8.625C8.34519 8.625 8.625 8.90481 8.625 9.25V11.125C8.625 11.4702 8.34519 11.75 8 11.75C7.65481 11.75 7.375 11.4702 7.375 11.125V9.25C7.375 8.90481 7.65481 8.625 8 8.625Z" fill="#785900"/>
+ </g>
+ </svg>
+diff --git a/web/app/components/workflow/nodes/agent/components/tool-icon.tsx b/web/app/components/workflow/nodes/agent/components/tool-icon.tsx
+index 8616f34200..4ff0cd780d 100644
+--- a/web/app/components/workflow/nodes/agent/components/tool-icon.tsx
++++ b/web/app/components/workflow/nodes/agent/components/tool-icon.tsx
+@@ -61,7 +61,7 @@ export const ToolIcon = memo(({ providerName }: ToolIconProps) => {
+   >
+     <div
+       className={classNames(
+-        'size-5 border-[0.5px] border-components-panel-border-subtle bg-background-default-dodge relative flex items-center justify-center rounded-[6px]',
++        'relative flex size-5 items-center justify-center rounded-[6px] border-[0.5px] border-components-panel-border-subtle bg-background-default-dodge',
+       )}
+       ref={containerRef}
+     >
+@@ -73,7 +73,7 @@ export const ToolIcon = memo(({ providerName }: ToolIconProps) => {
+             src={icon}
+             alt='tool icon'
+             className={classNames(
+-              'w-full h-full size-3.5 object-cover',
++              'size-3.5 h-full w-full object-cover',
+               notSuccess && 'opacity-50',
+             )}
+             onError={() => setIconFetchError(true)}
+@@ -82,7 +82,7 @@ export const ToolIcon = memo(({ providerName }: ToolIconProps) => {
+         if (typeof icon === 'object') {
+           return <AppIcon
+             className={classNames(
+-              'w-full h-full size-3.5 object-cover',
++              'size-3.5 h-full w-full object-cover',
+               notSuccess && 'opacity-50',
+             )}
+             icon={icon?.content}
+diff --git a/web/service/apps.ts b/web/service/apps.ts
+index d87a98412e..d54ba93750 100644
+--- a/web/service/apps.ts
++++ b/web/service/apps.ts
+@@ -5,6 +5,10 @@ import type { CommonResponse } from '@/models/common'
+ import type { AppIconType, AppMode, ModelConfig } from '@/types/app'
+ import type { TracingProvider } from '@/app/(commonLayout)/app/(appDetailLayout)/[appId]/overview/tracing/type'
+ 
++export const exportToFirestore: Fetcher<AppDetailResponse, { appID: string; paramID?: string | null; name: string; icon: string; icon_background?: string | null; description?: string; category: string; has_knowledge_base: boolean }> = ({ appID, paramID, name, icon, icon_background, description, category, has_knowledge_base }) => {
++  return post<AppDetailResponse>(`apps/${appID}/exportFirestore`, { body: { appID, paramID, name, icon, icon_background, description, category, has_knowledge_base } })
++}
++
+ export const fetchAppList: Fetcher<AppListResponse, { url: string; params?: Record<string, any> }> = ({ url, params }) => {
+   return get<AppListResponse>(url, { params })
+ }
+diff --git a/web/themes/tailwind-theme-var-define.ts b/web/themes/tailwind-theme-var-define.ts
+index 66a34b06ca..2010d53aab 100644
+--- a/web/themes/tailwind-theme-var-define.ts
++++ b/web/themes/tailwind-theme-var-define.ts
+@@ -390,6 +390,7 @@ const vars = {
+   'background-gradient-bg-fill-chat-bg-2': 'var(--color-background-gradient-bg-fill-chat-bg-2)',
+   'background-gradient-bg-fill-chat-bubble-bg-1': 'var(--color-background-gradient-bg-fill-chat-bubble-bg-1)',
+   'background-gradient-bg-fill-chat-bubble-bg-2': 'var(--color-background-gradient-bg-fill-chat-bubble-bg-2)',
++  'background-gradient-bg-fill-chat-bubble-bg-3': 'var(--color-background-gradient-bg-fill-chat-bubble-bg-3)',
+   'background-gradient-bg-fill-debug-bg-1': 'var(--color-background-gradient-bg-fill-debug-bg-1)',
+   'background-gradient-bg-fill-debug-bg-2': 'var(--color-background-gradient-bg-fill-debug-bg-2)',
+ 
+diff --git a/web/types/app.ts b/web/types/app.ts
+index 3de5c446ec..0a75603a18 100644
+--- a/web/types/app.ts
++++ b/web/types/app.ts
+@@ -315,6 +315,8 @@ export type AppIconType = 'image' | 'emoji'
+ export type App = {
+   /** App ID */
+   id: string
++  /** App ID */
++  param_id: string | null
+   /** Name */
+   name: string
+   /** Description */

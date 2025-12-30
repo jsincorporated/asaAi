@@ -27,7 +27,7 @@ import { useProviderContext } from '@/context/provider-context'
 import { useAsyncWindowOpen } from '@/hooks/use-async-window-open'
 import { AccessMode } from '@/models/access-control'
 import { useGetUserCanAccessApp } from '@/service/access-control'
-import { copyApp, deleteApp, exportAppConfig, updateAppInfo } from '@/service/apps'
+import { copyApp, deleteApp, exportAppConfig, exportToFirestore, updateAppInfo } from '@/service/apps'
 import { fetchInstalledAppList } from '@/service/explore'
 import { fetchWorkflowDraft } from '@/service/workflow'
 import { AppModeEnum } from '@/types/app'
@@ -75,6 +75,8 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [showAccessControl, setShowAccessControl] = useState(false)
   const [secretEnvList, setSecretEnvList] = useState<EnvironmentVariable[]>([])
+  const [showFirestoreExportConfirm, setShowFirestoreExportConfirm] = useState(false)
+  const [hasKnowledgeBase, setHasKnowledgeBase] = useState(false)
 
   const onConfirmDelete = useCallback(async () => {
     try {
@@ -199,6 +201,29 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
     setShowSwitchModal(false)
   }
 
+  const handleFirestoreExport = async () => {
+    try {
+      await exportToFirestore({
+        appID: app.id,
+        paramID: app.param_id,
+        name: app.name,
+        icon: app.icon,
+        icon_background: app.icon_background,
+        description: app.description,
+        category: app.mode,
+        has_knowledge_base: hasKnowledgeBase,
+      })
+      setShowFirestoreExportConfirm(false)
+      notify({
+        type: 'success',
+        message: 'Successfully exported to Firestore',
+      })
+    }
+    catch (e: any) {
+      notify({ type: 'error', message: e.message || 'Export failed' })
+    }
+  }
+
   const onUpdateAccessControl = useCallback(() => {
     if (onRefresh)
       onRefresh()
@@ -227,6 +252,12 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       props.onClick?.()
       e.preventDefault()
       exportCheck()
+    }
+    const onClickFirestoreExport = async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      props.onClick?.()
+      e.preventDefault()
+      setShowFirestoreExportConfirm(true)
     }
     const onClickSwitch = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation()
@@ -270,6 +301,9 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       <div className="relative flex w-full flex-col py-1" onMouseLeave={onMouseLeave}>
         <button type="button" className="mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover" onClick={onClickSettings}>
           <span className="system-sm-regular text-text-secondary">{t('app.editApp')}</span>
+        </button>
+        <button type="button" className="mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover" onClick={onClickFirestoreExport}>
+          <span className="system-sm-regular text-text-secondary">Firestore</span>
         </button>
         <Divider className="my-1" />
         <button type="button" className="mx-1 flex h-8 cursor-pointer items-center gap-2 rounded-lg px-3 hover:bg-state-base-hover" onClick={onClickDuplicate}>
@@ -516,6 +550,29 @@ const AppCard = ({ app, onRefresh }: AppCardProps) => {
       )}
       {showAccessControl && (
         <AccessControl app={app} onConfirm={onUpdateAccessControl} onClose={() => setShowAccessControl(false)} />
+      )}
+      {showFirestoreExportConfirm && (
+        <Confirm
+          title="Export to Firestore"
+          content={
+            <>
+              <p>Are you sure you want to export this app to Firestore?</p>
+              <div className="mt-2">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={hasKnowledgeBase}
+                    onChange={e => setHasKnowledgeBase(e.target.checked)}
+                  />{' '}
+                  Has Knowledge Base
+                </label>
+              </div>
+            </>
+          }
+          isShow={showFirestoreExportConfirm}
+          onConfirm={handleFirestoreExport}
+          onCancel={() => setShowFirestoreExportConfirm(false)}
+        />
       )}
     </>
   )
