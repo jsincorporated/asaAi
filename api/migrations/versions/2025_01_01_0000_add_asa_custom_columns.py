@@ -1,7 +1,7 @@
 """add asa custom columns
 
 Revision ID: asa_custom_columns
-Revises:
+Revises: 03ea244985ce
 Create Date: 2025-01-01 00:00:00.000000
 
 """
@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = 'asa_custom_columns'
-down_revision = None
+down_revision = '03ea244985ce'
 branch_labels = None
 depends_on = None
 
