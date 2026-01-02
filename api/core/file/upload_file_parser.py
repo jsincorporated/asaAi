@@ -25,7 +25,7 @@ class UploadFileParser:
             try:
                 data = storage.load(upload_file.key)
             except FileNotFoundError:
-                logging.exception(f"File not found: {upload_file.key}")
+                logging.exception("File not found: %s", upload_file.key)
                 return None
 
             encoded_string = base64.b64encode(data).decode("utf-8")

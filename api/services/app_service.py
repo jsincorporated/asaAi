@@ -3,10 +3,10 @@ import logging
 import os
 from typing import TypedDict, cast
 
-import firebase_admin
+import firebase_admin  # type: ignore[import-untyped]
 import sqlalchemy as sa
-from google.cloud import firestore
 from flask_sqlalchemy.pagination import Pagination
+from google.cloud import firestore  # type: ignore[import-untyped]
 
 from configs import dify_config
 from constants.model_template import default_app_templates
@@ -445,8 +445,8 @@ class AppService:
         Initialize Firestore client with emulator support or production credentials.
         """
         try:
-            app = firebase_admin.get_app()
-            return app
+            firebase_admin.get_app()
+            return
         except ValueError:
             pass
         use_emulator = True
@@ -460,7 +460,7 @@ class AppService:
             os.environ["GOOGLE_CLOUD_PROJECT"] = "asa-team"
             firebase_admin.initialize_app(options={"projectId": "asa-team"})
         else:
-            from firebase_admin import credentials
+            from firebase_admin import credentials  # type: ignore[import-untyped]
 
             service_account_path = "./token-firebase-admin.json"
             cred = credentials.Certificate(service_account_path)

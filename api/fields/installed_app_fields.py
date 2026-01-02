@@ -2,6 +2,7 @@ from flask_restx import fields
 
 from libs.helper import AppIconUrlField, TimestampField
 
+# ASA custom: tag fields for installed apps
 tag_fields = {"id": fields.String, "name": fields.String, "type": fields.String}
 
 app_fields = {

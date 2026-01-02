@@ -566,7 +566,12 @@ services:
   # worker service
   # The Celery worker for processing the queue.
   worker:
-    image: langgenius/dify-api:1.6.0
+    # ASA custom: use locally built image instead of remote
+    # image: langgenius/dify-api:1.6.0
+    build:
+      context: ../api
+      dockerfile: Dockerfile
+    image: dify-api:local
     restart: always
     environment:
       # Use the shared environment variables.

@@ -18,6 +18,7 @@ from models import App, InstalledApp, RecommendedApp
 from services.account_service import TenantService
 from services.enterprise.enterprise_service import EnterpriseService
 from services.feature_service import FeatureService
+from services.tag_service import TagService
 
 
 class InstalledAppCreatePayload(BaseModel):
@@ -38,6 +39,8 @@ class InstalledAppsListApi(Resource):
     @marshal_with(installed_app_list_fields)
     def get(self):
         app_id = request.args.get("app_id", default=None, type=str)
+        # ASA custom: tag_names filter
+        tag_names = request.args.get("tag_names", default=None, type=str)
         current_user, current_tenant_id = current_account_with_tenant()
 
         if app_id:
@@ -50,6 +53,34 @@ class InstalledAppsListApi(Resource):
             installed_apps = db.session.scalars(
                 select(InstalledApp).where(InstalledApp.tenant_id == current_tenant_id)
             ).all()
+
+        # ASA custom: filter by tag_names
+        if tag_names:
+            tag_name_list = [name.strip() for name in tag_names.split(",") if name.strip()]
+            if tag_name_list:
+                # Get all tag IDs for the specified tag names
+                tag_ids_to_filter = []
+                for tag_name in tag_name_list:
+                    tags = TagService.get_tag_by_tag_name("app", current_tenant_id, tag_name)
+                    if tags:
+                        tag_ids_to_filter.extend([str(tag.id) for tag in tags])
+
+                if tag_ids_to_filter:
+                    # Get app IDs that have any of these tags
+                    app_ids_with_tags = TagService.get_target_ids_by_tag_ids(
+                        "app", current_tenant_id, tag_ids_to_filter
+                    )
+                    app_ids_with_tags_set = {str(app_id) for app_id in app_ids_with_tags}
+
+                    # Filter installed apps
+                    installed_apps = [
+                        installed_app
+                        for installed_app in installed_apps
+                        if str(installed_app.app_id) in app_ids_with_tags_set
+                    ]
+                else:
+                    # No matching tags found, return empty list
+                    installed_apps = []
 
         if current_user.current_tenant is None:
             raise ValueError("current_user.current_tenant must not be None")

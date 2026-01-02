@@ -124,6 +124,10 @@ class DatasetCreatePayload(BaseModel):
     provider: str = "vendor"
     external_knowledge_api_id: str | None = None
     external_knowledge_id: str | None = None
+    # ASA custom fields
+    asa_company_id: str | None = None
+    asa_uid: str | None = None
+    access_scope: str | None = None
 
     @field_validator("indexing_technique")
     @classmethod
@@ -349,6 +353,9 @@ class DatasetListApi(Resource):
                 provider=payload.provider,
                 external_knowledge_api_id=payload.external_knowledge_api_id,
                 external_knowledge_id=payload.external_knowledge_id,
+                asa_company_id=payload.asa_company_id,
+                asa_uid=payload.asa_uid,
+                access_scope=payload.access_scope,
             )
         except services.errors.dataset.DatasetNameDuplicateError:
             raise DatasetNameDuplicateError()
@@ -914,3 +921,51 @@ class DatasetAutoDisableLogApi(Resource):
         if dataset is None:
             raise NotFound("Dataset not found.")
         return DatasetService.get_dataset_auto_disable_logs(dataset_id_str), 200
+
+
+class DatasetEncryptPayload(BaseModel):
+    dataset_id: str = Field(..., description="Dataset ID to encrypt")
+
+
+register_schema_models(console_ns, DatasetEncryptPayload)
+
+
+@console_ns.route("/datasets/encrypt")
+class DatasetEncryptionApi(Resource):
+    """Encrypt dataset ID for ASA external use."""
+
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """
+        Encrypt a dataset ID (Custom ASA endpoint)
+        """
+        from flask_login import current_user
+
+        from services.app_dsl_service import AppDslService
+
+        # The role of the current user must be admin, owner, or editor
+        if not current_user.is_editor:
+            raise Forbidden()
+
+        args = DatasetEncryptPayload.model_validate(console_ns.payload)
+        dataset_id = args.dataset_id
+
+        # Validate that the dataset exists and the user has access to it
+        dataset = DatasetService.get_dataset(dataset_id)
+        if dataset is None:
+            raise NotFound("Dataset not found.")
+
+        try:
+            DatasetService.check_dataset_permission(dataset, current_user)
+        except services.errors.account.NoPermissionError as e:
+            raise Forbidden(str(e))
+
+        # Encrypt the dataset ID
+        encrypted_id = AppDslService.encrypt_dataset_id(
+            dataset_id=dataset_id,
+            tenant_id=current_user.current_tenant_id,
+        )
+
+        return {"encrypted_id": encrypted_id}, 200

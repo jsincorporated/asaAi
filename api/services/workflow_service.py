@@ -229,6 +229,7 @@ class WorkflowService:
                 created_by=account.id,
                 environment_variables=environment_variables,
                 conversation_variables=conversation_variables,
+                asa_company_id=app_model.asa_company_id,
             )
             db.session.add(workflow)
         # update draft workflow if found
@@ -239,6 +240,7 @@ class WorkflowService:
             workflow.updated_at = naive_utc_now()
             workflow.environment_variables = environment_variables
             workflow.conversation_variables = conversation_variables
+            workflow.asa_company_id = app_model.asa_company_id
 
         # commit db session changes
         db.session.commit()

@@ -196,7 +196,7 @@ app_detail_fields_with_site = {
     "updated_by": fields.String,
     "updated_at": TimestampField,
     "deleted_tools": fields.List(fields.Nested(deleted_tool_fields)),
-    'asa_company_id': fields.String,
+    "asa_company_id": fields.String,
     "access_mode": fields.String,
     "tags": fields.List(fields.Nested(tag_fields)),
     "site": fields.Nested(site_fields),

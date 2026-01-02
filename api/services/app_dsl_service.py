@@ -443,6 +443,9 @@ class AppDslService:
             app.icon_background = icon_background or app_data.get("icon_background", app.icon_background)
             app.updated_by = account.id
             app.updated_at = naive_utc_now()
+            # ASA custom: preserve asa_company_id from source app data if present
+            if app_data.get("asa_company_id"):
+                app.asa_company_id = app_data.get("asa_company_id")
         else:
             if account.current_tenant_id is None:
                 raise ValueError("Current tenant is not set")
@@ -462,6 +465,8 @@ class AppDslService:
             app.use_icon_as_answer_icon = app_data.get("use_icon_as_answer_icon", False)
             app.created_by = account.id
             app.updated_by = account.id
+            # ASA custom: copy asa_company_id from source app data
+            app.asa_company_id = app_data.get("asa_company_id")
 
             self._session.add(app)
             self._session.commit()
@@ -555,6 +560,8 @@ class AppDslService:
                 "icon_background": "#FFEAD5" if app_model.icon_type == "image" else app_model.icon_background,
                 "description": app_model.description,
                 "use_icon_as_answer_icon": app_model.use_icon_as_answer_icon,
+                # ASA custom: include asa_company_id in export
+                "asa_company_id": app_model.asa_company_id,
             },
         }
 

@@ -587,3 +587,61 @@ def _get_conversation(app_model, conversation_id):
         db.session.commit()
 
     return conversation
+
+
+# ASA custom model for conversation statistics
+conversation_statistics_model = console_ns.model(
+    "ConversationStatistics",
+    {
+        "total_messages": fields.Integer,
+        "total_tokens": fields.Integer,
+        "total_price": fields.Float,
+        "currency": fields.String,
+    },
+)
+
+
+@console_ns.route("/apps/<uuid:app_id>/conversations/<uuid:conversation_id>/statistics")
+class ConversationStatisticsApi(Resource):
+    """ASA custom endpoint for per-conversation statistics."""
+
+    @console_ns.doc("get_conversation_statistics")
+    @console_ns.doc(description="Get statistics for a specific conversation")
+    @console_ns.doc(params={"app_id": "Application ID", "conversation_id": "Conversation ID"})
+    @console_ns.response(200, "Success", conversation_statistics_model)
+    @console_ns.response(403, "Insufficient permissions")
+    @console_ns.response(404, "Conversation not found")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @get_app_model(mode=[AppMode.CHAT, AppMode.AGENT_CHAT, AppMode.ADVANCED_CHAT, AppMode.COMPLETION])
+    @marshal_with(conversation_statistics_model)
+    @edit_permission_required
+    def get(self, app_model, conversation_id):
+        import decimal
+
+        conversation_id = str(conversation_id)
+
+        conversation = _get_conversation(app_model, conversation_id)
+
+        # Fetch all messages for the conversation
+        messages = db.session.query(Message).filter(Message.conversation_id == conversation.id).all()
+
+        total_messages = len(messages)
+        total_tokens = 0
+        total_price = decimal.Decimal(0.0)
+        currency = "USD"  # Default currency
+
+        for message in messages:
+            total_tokens += message.message_tokens + message.answer_tokens
+            if message.total_price:
+                total_price += message.total_price
+            if message.currency:
+                currency = message.currency
+
+        return {
+            "total_messages": total_messages,
+            "total_tokens": total_tokens,
+            "total_price": float(total_price),
+            "currency": currency,
+        }

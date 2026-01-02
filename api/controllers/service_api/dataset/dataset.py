@@ -39,6 +39,10 @@ class DatasetCreatePayload(BaseModel):
     retrieval_model: RetrievalModel | None = None
     embedding_model: str | None = None
     embedding_model_provider: str | None = None
+    # ASA custom fields
+    asa_company_id: str | None = None
+    asa_uid: str | None = None
+    access_scope: str | None = None
 
 
 class DatasetUpdatePayload(BaseModel):
@@ -196,6 +200,9 @@ class DatasetListApi(DatasetApiResource):
                 provider=payload.provider,
                 external_knowledge_api_id=payload.external_knowledge_api_id,
                 external_knowledge_id=payload.external_knowledge_id,
+                asa_company_id=payload.asa_company_id,
+                asa_uid=payload.asa_uid,
+                access_scope=payload.access_scope,
                 embedding_model_provider=payload.embedding_model_provider,
                 embedding_model_name=payload.embedding_model,
                 retrieval_model=payload.retrieval_model,

@@ -155,7 +155,7 @@ class Workflow(Base):  # bug
         server_default=func.current_timestamp(),
         onupdate=func.current_timestamp(),
     )
-    asa_company_id: Mapped[str] = mapped_column(sa.String(255), nullable=True)
+    asa_company_id: Mapped[str | None] = mapped_column(sa.String(255), nullable=True)
     _environment_variables: Mapped[str] = mapped_column("environment_variables", LongText, nullable=False, default="{}")
     _conversation_variables: Mapped[str] = mapped_column(
         "conversation_variables", LongText, nullable=False, default="{}"

@@ -4,7 +4,6 @@ from flask_restx import Resource
 from pydantic import BaseModel, Field
 
 import services
-from libs.passport import PassportService
 from configs import dify_config
 from constants.languages import get_valid_language
 from controllers.console import console_ns
@@ -32,6 +31,7 @@ from controllers.console.wraps import (
 from events.tenant_event import tenant_was_created
 from libs.helper import EmailStr, extract_remote_ip
 from libs.login import current_account_with_tenant
+from libs.passport import PassportService
 from libs.token import (
     clear_access_token_from_cookie,
     clear_csrf_token_from_cookie,
@@ -46,6 +46,8 @@ from services.billing_service import BillingService
 from services.errors.account import AccountRegisterError
 from services.errors.workspace import WorkSpaceNotAllowedCreateError, WorkspacesLimitExceededError
 from services.feature_service import FeatureService
+
+ASA_ACCOUNT_EMAIL = "asa-shared-account@asateam.ai"
 
 DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
@@ -311,9 +313,6 @@ class RefreshTokenApi(Resource):
             return {"result": "fail", "message": str(e)}, 401
 
 
-ASA_ACCOUNT_EMAIL = "webmasters@asa.team"
-
-
 @console_ns.route("/external-login")
 class SharedAccountLoginApi(Resource):
     """Resource for shared account login with external user tracking."""
@@ -330,17 +329,16 @@ class SharedAccountLoginApi(Resource):
         if not user_email or not asa_uid:
             return {"result": "fail", "data": "Email or external user ID not provided in token"}, 400
 
+        # Ensure only one main account is used
         account = AccountService.get_user_through_email(ASA_ACCOUNT_EMAIL)
         if not account:
             account = AccountService.create_account(
-                email=ASA_ACCOUNT_EMAIL, name=user_email, interface_language="en-US"
+                email=ASA_ACCOUNT_EMAIL,
+                name=user_email,
+                interface_language="en-US",
             )
 
+        # Include `asa_uid` in the login metadata for tracking
         token_pair = AccountService.login(account=account, ip_address=extract_remote_ip(request))
         AccountService.reset_login_error_rate_limit(user_email)
-
-        response = make_response({"result": "success", "data": token_pair.model_dump()})
-        set_csrf_token_to_cookie(request, response, token_pair.csrf_token)
-        set_access_token_to_cookie(request, response, token_pair.access_token)
-        set_refresh_token_to_cookie(request, response, token_pair.refresh_token)
-        return response
+        return {"result": "success", "data": token_pair.model_dump()}

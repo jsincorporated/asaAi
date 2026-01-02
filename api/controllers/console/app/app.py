@@ -2,11 +2,12 @@ import uuid
 from typing import Literal
 
 from flask import request
+from flask_login import current_user
 from flask_restx import Resource, fields, marshal, marshal_with
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import BadRequest, Forbidden
 
 from controllers.console import console_ns
 from controllers.console.app.wraps import get_app_model
@@ -22,6 +23,7 @@ from core.ops.ops_trace_manager import OpsTraceManager
 from core.workflow.enums import NodeType
 from extensions.ext_database import db
 from fields.app_fields import (
+    app_detail_fields_with_site,
     deleted_tool_fields,
     model_config_fields,
     model_config_partial_fields,
@@ -36,6 +38,7 @@ from services.app_dsl_service import AppDslService, ImportMode
 from services.app_service import AppService
 from services.enterprise.enterprise_service import EnterpriseService
 from services.feature_service import FeatureService
+from services.tag_service import TagService
 
 ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
 DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
@@ -49,6 +52,7 @@ class AppListQuery(BaseModel):
     )
     name: str | None = Field(default=None, description="Filter by app name")
     tag_ids: list[str] | None = Field(default=None, description="Comma-separated tag IDs")
+    tag_names: list[str] | None = Field(default=None, description="Comma-separated tag names (ASA custom)")
     is_created_by_me: bool | None = Field(default=None, description="Filter by creator")
 
     @field_validator("tag_ids", mode="before")
@@ -71,6 +75,25 @@ class AppListQuery(BaseModel):
             return [str(uuid.UUID(item)) for item in items]
         except ValueError as exc:
             raise ValueError("Invalid UUID format in tag_ids.") from exc
+
+    @field_validator("tag_names", mode="before")
+    @classmethod
+    def validate_tag_names(cls, value: str | list[str] | None) -> list[str] | None:
+        """ASA custom: validate and parse tag_names from comma-separated string."""
+        if not value:
+            return None
+
+        if isinstance(value, str):
+            items = [item.strip() for item in value.split(",") if item.strip()]
+        elif isinstance(value, list):
+            items = [str(item).strip() for item in value if item and str(item).strip()]
+        else:
+            raise TypeError("Unsupported tag_names type.")
+
+        if not items:
+            return None
+
+        return items
 
 
 class CreateAppPayload(BaseModel):
@@ -271,6 +294,24 @@ class AppListApi(Resource):
 
         args = AppListQuery.model_validate(request.args.to_dict(flat=True))  # type: ignore
         args_dict = args.model_dump()
+
+        # ASA custom: resolve tag_names to tag_ids
+        if args_dict.get("tag_names"):
+            tag_ids_from_names = []
+            for tag_name in args_dict["tag_names"]:
+                tags = TagService.get_tag_by_tag_name("app", current_tenant_id, tag_name)
+                if tags:
+                    tag_ids_from_names.extend([str(tag.id) for tag in tags])
+            if tag_ids_from_names:
+                # Merge with existing tag_ids if any
+                existing_tag_ids = args_dict.get("tag_ids") or []
+                args_dict["tag_ids"] = list(set(existing_tag_ids + tag_ids_from_names))
+            elif not args_dict.get("tag_ids"):
+                # If tag names were provided but no matching tags found, return empty result
+                del args_dict["tag_names"]
+                return {"data": [], "total": 0, "page": 1, "limit": 20, "has_more": False}
+            # Remove tag_names from args_dict as it's not used by the service
+            del args_dict["tag_names"]
 
         # get app list
         app_service = AppService()
@@ -620,44 +661,37 @@ class AppTraceApi(Resource):
         return {"result": "success"}
 
 
-ALLOW_CREATE_APP_MODES = ["chat", "agent-chat", "advanced-chat", "workflow", "completion"]
-
-
-class ExportFirestorePayload(BaseModel):
-    appID: str = Field(..., description="Application ID")
+class FirestoreExportPayload(BaseModel):
+    appID: str = Field(..., description="App ID for Firestore export")
+    name: str | None = Field(default=None, description="App name")
+    description: str | None = Field(default=None, description="App description")
+    icon: str | None = Field(default=None, description="Icon")
+    icon_background: str | None = Field(default=None, description="Icon background")
     paramID: str | None = Field(default=None, description="Parameter ID")
-    name: str | None = Field(default=None, description="Application name")
-    description: str | None = Field(default=None, description="Application description")
-    icon: str | None = Field(default=None, description="Application icon")
-    icon_background: str | None = Field(default=None, description="Icon background color")
-    category: str | None = Field(default=None, description="Application category/mode")
-    has_knowledge_base: bool = Field(default=False, description="Whether app has knowledge base")
+    category: str | None = Field(default=None, description="Category")
+    has_knowledge_base: bool | None = Field(default=None, description="Has knowledge base")
+
+
+reg(FirestoreExportPayload)
 
 
 @console_ns.route("/apps/<uuid:app_id>/exportFirestore")
 class AppExportFirestoreApi(Resource):
-    @console_ns.doc("export_app_to_firestore")
-    @console_ns.doc(description="Export app to Firestore")
-    @console_ns.expect(console_ns.models.get(ExportFirestorePayload.__name__) or console_ns.model(
-        ExportFirestorePayload.__name__,
-        {
-            "appID": fields.String(required=True),
-            "paramID": fields.String(),
-            "name": fields.String(),
-            "description": fields.String(),
-            "icon": fields.String(),
-            "icon_background": fields.String(),
-            "category": fields.String(),
-            "has_knowledge_base": fields.Boolean(),
-        },
-    ))
+    """Export App Firestore for ASA integration."""
+
     @setup_required
     @login_required
     @account_initialization_required
-    @edit_permission_required
-    def post(self, app_id):
-        """Export App to Firestore"""
-        args = ExportFirestorePayload.model_validate(console_ns.payload)
+    @get_app_model
+    @marshal_with(app_detail_fields_with_site)
+    def post(self, app_model):
+        """Export App Firestore"""
+        # The role of the current user in the ta table must be admin, owner, or editor
+        if not current_user.is_editor:
+            raise Forbidden()
+        args = FirestoreExportPayload.model_validate(console_ns.payload)
+
         app_service = AppService()
         app_service.export_to_firestore(args.model_dump())
-        return {"result": "success"}, 201
+
+        return app_model, 201

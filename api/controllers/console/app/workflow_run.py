@@ -375,3 +375,64 @@ class WorkflowRunNodeExecutionListApi(Resource):
         )
 
         return {"data": node_executions}
+
+
+# ASA custom model for workflow run statistics
+workflow_run_statistics_model = console_ns.model(
+    "WorkflowRunStatistics",
+    {
+        "total_tokens": fields.Integer,
+        "total_price": fields.Float,
+        "currency": fields.String,
+    },
+)
+
+
+@console_ns.route("/apps/<uuid:app_id>/workflow-runs/<uuid:run_id>/statistics")
+class WorkflowRunStatisticsApi(Resource):
+    """ASA custom endpoint for per-run workflow statistics."""
+
+    @console_ns.doc("get_workflow_run_statistics")
+    @console_ns.doc(description="Get workflow run statistics")
+    @console_ns.doc(params={"app_id": "Application ID", "run_id": "Workflow run ID"})
+    @console_ns.response(200, "Workflow run statistics retrieved successfully", workflow_run_statistics_model)
+    @console_ns.response(404, "Workflow run not found")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    @get_app_model(mode=[AppMode.ADVANCED_CHAT, AppMode.WORKFLOW])
+    @marshal_with(workflow_run_statistics_model)
+    def get(self, app_model: App, run_id):
+        """
+        Get workflow run statistics
+        """
+        import decimal
+
+        run_id = str(run_id)
+
+        workflow_run_service = WorkflowRunService()
+        user = cast("Account | EndUser", current_user)
+        node_executions = workflow_run_service.get_workflow_run_node_executions(
+            app_model=app_model,
+            run_id=run_id,
+            user=user,
+        )
+
+        total_tokens = 0
+        total_price = decimal.Decimal(0.0)
+        currency = "USD"
+
+        for node_execution in node_executions:
+            metadata = node_execution.execution_metadata_dict
+            if metadata and "total_tokens" in metadata:
+                total_tokens += metadata["total_tokens"]
+            if metadata and "total_price" in metadata:
+                total_price += decimal.Decimal(str(metadata["total_price"]))
+            if metadata and "currency" in metadata:
+                currency = metadata["currency"]
+
+        return {
+            "total_tokens": total_tokens,
+            "total_price": float(total_price),
+            "currency": currency,
+        }

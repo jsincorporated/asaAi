@@ -350,8 +350,7 @@ class IndexingRunner:
                     if image_file is None:
                         continue
                     try:
-                        if image_file:
-                            storage.delete(image_file.key)
+                        storage.delete(image_file.key)
                     except Exception:
                         logger.exception(
                             "Delete image_files failed while indexing_estimate, \
