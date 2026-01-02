@@ -27,6 +27,7 @@ dependencies = [
     "google-auth==2.29.0",
     "google-auth-httplib2==0.2.0",
     "google-cloud-aiplatform==1.49.0",
+    "firebase-admin~=6.5.0",
     "googleapis-common-protos==1.63.0",
     "gunicorn~=23.0.0",
     "httpx[socks]~=0.27.0",
