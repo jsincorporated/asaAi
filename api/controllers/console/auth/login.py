@@ -47,7 +47,7 @@ from services.errors.account import AccountRegisterError
 from services.errors.workspace import WorkSpaceNotAllowedCreateError, WorkspacesLimitExceededError
 from services.feature_service import FeatureService
 
-ASA_ACCOUNT_EMAIL = "asa-shared-account@asateam.ai"
+ASA_ACCOUNT_EMAIL = "webmasters@asa.team"
 
 DEFAULT_REF_TEMPLATE_SWAGGER_2_0 = "#/definitions/{model}"
 
