@@ -194,6 +194,15 @@ def check_csrf_token(request: Request, user_id: str):
         if auth_token and auth_token == dify_config.ADMIN_API_KEY:
             return
 
+    # ASA: Bypass CSRF for external API calls (server-to-server with only Bearer token, no cookies)
+    # This is safe because CSRF attacks require a browser context with cookies.
+    # External API calls use Authorization header only, without cookies.
+    auth_header = request.headers.get("Authorization")
+    access_token_cookie = request.cookies.get(_real_cookie_name(COOKIE_NAME_ACCESS_TOKEN))
+    if auth_header and auth_header.startswith("Bearer ") and not access_token_cookie:
+        # Request is using Bearer token without cookies - external API call
+        return
+
     def _unauthorized():
         raise Unauthorized("CSRF token is missing or invalid.")
 
